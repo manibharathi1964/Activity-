@@ -339,59 +339,80 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 
 @Composable fun Report(l:List<A>,back:()->Unit,settings:()->Unit,savePdf:(String,String)->Unit,share:(String)->Unit){
  val c=androidx.compose.ui.platform.LocalContext.current
- var tab by remember{mutableStateOf(0)}
+ var tab by remember{mutableIntStateOf(0)}
  var customStart by remember{mutableStateOf(today())}
  var customEnd by remember{mutableStateOf(today())}
  var pickingStart by remember{mutableStateOf(false)}
  var pickingEnd by remember{mutableStateOf(false)}
- var generatedAt by remember{mutableStateOf("")};var generatedReport by remember{mutableStateOf("")}
- val range=when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}
- val stats=rangeStats(l,range.first,range.second)
+ val range=remember(tab,customStart,customEnd){when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}}
+ val stats=runCatching{rangeStats(l,range.first,range.second)}.getOrElse{Triple(0,0,0)}
  val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
  Scaffold(bottomBar={Nav(S.REPORT,back,settings)},containerColor=Color(0xFFF6F6FF)){p->
   LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    item{Header(settings)}
-   item{ReportSegmentedTabs(tab){tab=it}}
-   item{if(tab==3){Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){DateRangeButton("Start Date",customStart,Modifier.weight(1f)){pickingStart=true};DateRangeButton("End Date",customEnd,Modifier.weight(1f)){pickingEnd=true}}}}
+   item{ReportSegmentedTabs(tab){selected->if(selected in 0..3)tab=selected}}
+   item{
+    if(tab==3){
+     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+      DateRangeButton("Start Date",customStart,Modifier.weight(1f)){pickingStart=true}
+      DateRangeButton("End Date",customEnd,Modifier.weight(1f)){pickingEnd=true}
+     }
+    }
+   }
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=C,shadowElevation=2.dp){
      Column(Modifier.padding(18.dp)){
       Row(verticalAlignment=Alignment.CenterVertically){
-       Column(Modifier.weight(1f)){Text(title,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold);Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)}
-       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){Text(if(generatedAt.isBlank())"Ready" else "Generated "+generatedAt,color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))}
+       Column(Modifier.weight(1f)){
+        Text(title,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold)
+        Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
+       }
+       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){
+        Text("Report",color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))
+       }
       }
       Spacer(Modifier.height(16.dp))
       Row(verticalAlignment=Alignment.CenterVertically){
        Box(Modifier.size(94.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,B,Color(0xFF18D7BF),P))),Alignment.Center){
-        Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)}
+        Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){
+         Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)
+        }
        }
        Spacer(Modifier.width(16.dp))
-       Column{Text("Overall Performance",color=M,fontSize=10.sp);Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=18.sp);Text("✓ "+stats.first+" completed of "+stats.second,color=G,fontSize=10.sp);Text("🔥 "+streak()+" day streak",color=O,fontSize=10.sp)}
+       Column{
+        Text("Overall Performance",color=M,fontSize=10.sp)
+        Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=18.sp)
+        Text("✓ "+stats.first+" completed of "+stats.second,color=G,fontSize=10.sp)
+        Text("🔥 "+streak()+" day streak",color=O,fontSize=10.sp)
+       }
       }
-      Spacer(Modifier.height(14.dp))
-      Button({val r=report(l,range.first,range.second);generatedReport=r;generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
      }
     }
    }
-    item{if(generatedReport.isNotBlank()){Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=Color(0xFFF7F6FF)){Column(Modifier.padding(16.dp)){Text("Generated Report",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);Text("Generated at "+generatedAt,color=M,fontSize=9.sp);Spacer(Modifier.height(8.dp));Text(generatedReport,color=N,fontSize=10.sp,lineHeight=16.sp)}}}}
-    item{DailyChart(l,range.first,range.second)}
+   item{DailyChart(l,range.first,range.second)}
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
      Column(Modifier.padding(16.dp)){
       Text(when(tab){0->"Daily Performance";1->"Weekly Performance";2->"Monthly Performance";else->"Custom Range Performance"},color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
-      Text(formatRange(range.first,range.second),color=M,fontSize=10.sp);Spacer(Modifier.height(10.dp));PerformanceRows(l,range.first,range.second)
+      Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
+      Spacer(Modifier.height(10.dp))
+      PerformanceRows(l,range.first,range.second)
      }
     }
    }
    item{
     Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
-     Button({savePdf(range.first,range.second)},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save Report")}
-     OutlinedButton({share(report(l,range.first,range.second))},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp)){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}
+     Button({savePdf(range.first,range.second)},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){
+      Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save Report")
+     }
+     OutlinedButton({share(report(l,range.first,range.second))},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp)){
+      Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")
+     }
     }
    }
   }
-  if(pickingStart) NativeDatePicker(c,customStart){customStart=it;pickingStart=false}
-  if(pickingEnd) NativeDatePicker(c,customEnd){customEnd=it;pickingEnd=false}
+  if(pickingStart) NativeDatePicker(c,customStart){selected->customStart=selected;pickingStart=false}
+  if(pickingEnd) NativeDatePicker(c,customEnd){selected->customEnd=selected;pickingEnd=false}
  }
 }
 @Composable fun PerformanceRows(l:List<A>,start:String,end:String){
@@ -465,11 +486,13 @@ fun rangeDates(start:String,end:String):List<String>{
  val out=mutableListOf<String>()
  val c=parseDay(safe.first)
  val e=parseDay(safe.second)
- while(!c.after(e)){
+ var guard=0
+ while(!c.after(e)&&guard<3661){
   out.add(SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time))
   c.add(Calendar.DAY_OF_MONTH,1)
+  guard++
  }
- return out
+ return if(out.isEmpty())listOf(today()) else out
 }
 
 fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
