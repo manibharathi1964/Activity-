@@ -373,7 +373,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
      }
     }
    }
-    item{if(generatedReport.isNotBlank()){Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=Color(0xFFF7F6FF)){Column(Modifier.padding(16.dp)){Text("Generated Report",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);Text("Generated at "+generatedAt,color=M,fontSize=9.sp);Spacer(Modifier.height(8.dp));Text(generatedReport,color=N,fontSize=10.sp,lineHeight=16.sp)}}}}\n   item{DailyChart(l,range.first,range.second)}
+    item{if(generatedReport.isNotBlank()){Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=Color(0xFFF7F6FF)){Column(Modifier.padding(16.dp)){Text("Generated Report",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);Text("Generated at "+generatedAt,color=M,fontSize=9.sp);Spacer(Modifier.height(8.dp));Text(generatedReport,color=N,fontSize=10.sp,lineHeight=16.sp)}}}}\n    item{DailyChart(l,range.first,range.second)}
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
      Column(Modifier.padding(16.dp)){
