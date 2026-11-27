@@ -369,7 +369,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
        Column{Text("Overall Performance",color=M,fontSize=10.sp);Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=18.sp);Text("✓ "+stats.first+" completed of "+stats.second,color=G,fontSize=10.sp);Text("🔥 "+streak()+" day streak",color=O,fontSize=10.sp)}
       }
       Spacer(Modifier.height(14.dp))
-      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date());generatedReport=report(l,range.first,range.second)},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
+      Button({val r=report(l,range.first,range.second);generatedReport=r;generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
      }
     }
    }
@@ -421,7 +421,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 @Composable fun NativeDatePicker(c:Context,initial:String,onDone:(String)->Unit){
  LaunchedEffect(Unit){
   val cal=Calendar.getInstance()
-  runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!}
+  runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)?.let{cal.time=it}}
   android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()
  }
 }
@@ -432,6 +432,11 @@ fun parseDay(s:String):Calendar=Calendar.getInstance().apply{
 }
 
 fun normalizeRange(start:String,end:String):Pair<String,String>{
+ val s=runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(start)}.getOrNull()
+ val e=runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(end)}.getOrNull()
+ if(s==null&&e==null)return Pair(today(),today())
+ if(s==null)return Pair(end,end)
+ if(e==null)return Pair(start,start)
  return if(start<=end)Pair(start,end) else Pair(end,start)
 }
 
@@ -456,9 +461,10 @@ fun monthBounds():Pair<String,String>{
 fun formatRange(start:String,end:String):String=display(start)+" – "+display(end)
 
 fun rangeDates(start:String,end:String):List<String>{
+ val safe=normalizeRange(start,end)
  val out=mutableListOf<String>()
- val c=parseDay(start)
- val e=parseDay(end)
+ val c=parseDay(safe.first)
+ val e=parseDay(safe.second)
  while(!c.after(e)){
   out.add(SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time))
   c.add(Calendar.DAY_OF_MONTH,1)
