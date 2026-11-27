@@ -95,7 +95,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 }};item{GradButton("＋  Add Activity",add)}
   item{Text("Today",color=N,fontSize=21.sp,fontWeight=FontWeight.Bold);Text(list.size.toString()+" activities  •  "+d+" completed",color=M,fontSize=12.sp)}
   items(shown){x->CardA(x,date,toggle,edit)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
- }
+ }}
  if(pickDate) NativeDatePicker(c,date){selected->setDate(selected);pickDate=false}
 }
 
