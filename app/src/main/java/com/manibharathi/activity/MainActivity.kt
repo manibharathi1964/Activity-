@@ -147,8 +147,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
    Surface(shape=RoundedCornerShape(20.dp),color=if(d)Color(0xFFDDF8E9) else Color(0xFFE8F0FF)){
     Row(Modifier.padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
      Icon(if(d) Icons.Default.CheckCircle else Icons.Default.Schedule,null,tint=if(d)G else B,modifier=Modifier.size(20.dp));Spacer(Modifier.width(5.dp));Text(if(d)"Done" else "Pending",color=if(d)G else B,fontSize=10.sp,fontWeight=FontWeight.Bold)
-    }
-   }
+    }   }
    IconButton({edit(x)},Modifier.size(42.dp)){Icon(Icons.Default.MoreVert,null,tint=M,modifier=Modifier.size(25.dp))}
   }
  }
@@ -297,8 +296,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
    IconButton({shown.add(java.util.Calendar.MONTH,1)}){Icon(Icons.Default.ChevronRight,null,tint=N)}
   }
   Surface(shape=RoundedCornerShape(22.dp),color=C){
-   Column(Modifier.padding(10.dp)){
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
+   Column(Modifier.padding(10.dp)){    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
      listOf("S","M","T","W","T","F","S").forEach{Text(it,Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=M,fontSize=10.sp,fontWeight=FontWeight.Bold)}
     }
     val first=(shown.clone() as java.util.Calendar).apply{set(java.util.Calendar.DAY_OF_MONTH,1)}
@@ -340,25 +338,13 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 @Composable fun Report(l:List<A>,back:()->Unit,settings:()->Unit,savePdf:(String,String)->Unit,share:(String)->Unit){
  val c=androidx.compose.ui.platform.LocalContext.current
  var tab by remember{mutableIntStateOf(0)}
- var customStart by remember{mutableStateOf(today())}
- var customEnd by remember{mutableStateOf(today())}
- var pickingStart by remember{mutableStateOf(false)}
- var pickingEnd by remember{mutableStateOf(false)}
- val range=remember(tab,customStart,customEnd){when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}}
+ val range=remember(tab){if(tab==0)Pair(today(),today()) else weekBounds()}
  val stats=runCatching{rangeStats(l,range.first,range.second)}.getOrElse{Triple(0,0,0)}
- val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
+ val title=if(tab==0)"Today Report" else "Weekly Report"
  Scaffold(bottomBar={Nav(S.REPORT,back,{},settings)},containerColor=Color(0xFFF6F6FF)){p->
   LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    item{Header(settings)}
-   item{ReportSegmentedTabs(tab){selected->if(selected in 0..3)tab=selected}}
-   item{
-    if(tab==3){
-     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-      DateRangeButton("Start Date",customStart,Modifier.weight(1f)){pickingStart=true}
-      DateRangeButton("End Date",customEnd,Modifier.weight(1f)){pickingEnd=true}
-     }
-    }
-   }
+   item{ReportSegmentedTabs(tab){selected->if(selected in 0..1)tab=selected}}
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=C,shadowElevation=2.dp){
      Column(Modifier.padding(18.dp)){
@@ -367,9 +353,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
         Text(title,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold)
         Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
        }
-       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){
-        Text("Report",color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))
-       }
+
       }
       Spacer(Modifier.height(16.dp))
       Row(verticalAlignment=Alignment.CenterVertically){
@@ -393,7 +377,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
      Column(Modifier.padding(16.dp)){
-      Text(when(tab){0->"Daily Performance";1->"Weekly Performance";2->"Monthly Performance";else->"Custom Range Performance"},color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
+      Text(if(tab==0)"Daily Performance" else "Weekly Performance",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
       Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
       Spacer(Modifier.height(10.dp))
       PerformanceRows(l,range.first,range.second)
@@ -411,8 +395,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
     }
    }
   }
-  if(pickingStart) NativeDatePicker(c,customStart){selected->customStart=selected;pickingStart=false}
-  if(pickingEnd) NativeDatePicker(c,customEnd){selected->customEnd=selected;pickingEnd=false}
+
  }
 }
 @Composable fun PerformanceRows(l:List<A>,start:String,end:String){
@@ -422,7 +405,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 @Composable fun ReportMetricRow(icon:ImageVector,label:String,value:String,tint:Color){Row(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(36.dp).clip(CircleShape).background(tint.copy(alpha=.12f)),Alignment.Center){Icon(icon,null,tint=tint,modifier=Modifier.size(19.dp))};Spacer(Modifier.width(10.dp));Text(label,color=M,fontSize=10.sp,modifier=Modifier.weight(1f));Text(value,color=N,fontSize=14.sp,fontWeight=FontWeight.Bold)}}
 
 @Composable fun ReportSegmentedTabs(selected:Int,onSelected:(Int)->Unit){
- SegmentedTabs(listOf("Today","Weekly","Monthly","Custom"),selected,onSelected)
+ SegmentedTabs(listOf("Today","Weekly"),selected,onSelected)
 }
 
 @Composable fun DateRangeButton(label:String,value:String,modifier:Modifier,onClick:()->Unit){
@@ -447,8 +430,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  }
 }
 
-fun parseDay(s:String):Calendar=Calendar.getInstance().apply{
- val format=SimpleDateFormat("yyyy-MM-dd",Locale.US).apply{isLenient=false}
+fun parseDay(s:String):Calendar=Calendar.getInstance().apply{ val format=SimpleDateFormat("yyyy-MM-dd",Locale.US).apply{isLenient=false}
  time=runCatching{format.parse(s)}.getOrNull()?:Date()
  set(Calendar.HOUR_OF_DAY,0);set(Calendar.MINUTE,0);set(Calendar.SECOND,0);set(Calendar.MILLISECOND,0)
 }
