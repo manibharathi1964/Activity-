@@ -59,7 +59,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  MaterialTheme(colorScheme=lightColorScheme()){Surface(Modifier.fillMaxSize(),color=Color(0xFFF6F6FF)){
   when(s){
    S.SPLASH->Splash()
-   S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{s=S.REPORT},{s=S.SETTINGS})
+   S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{id->list=list.filterNot{it.id==id};save(c,list)},{s=S.REPORT},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
    S.REPORT->Report(list,{s=S.HOME},{s=S.SETTINGS},{start,end->pendingPdf=buildPdf(list,start,end);savePdf.launch("Activity-Report.pdf")},{text->share(c,text)})
@@ -72,7 +72,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Header(settings:()->Unit){Row(Modifier.fillMaxWidth().height(64.dp),verticalAlignment=Alignment.CenterVertically){Image(painterResource(R.drawable.activity_logo),contentDescription="Activity",Modifier.size(48.dp));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text("Activity",color=P,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Plan • Track • Achieve",color=M,fontSize=11.sp)};Box{var open by remember{mutableStateOf(false)};IconButton({open=true}){Icon(Icons.Default.MoreVert,null,tint=P)};DropdownMenu(open,{open=false}){DropdownMenuItem({Text("Settings")},{open=false;settings()})}}}}
 
-@Composable fun Home(list:List<A>,date:String,filter:String,completionVersion:Int,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;val refresh=completionVersion;var pickDate by remember{mutableStateOf(false)}
+@Composable fun Home(list:List<A>,date:String,filter:String,completionVersion:Int,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,delete:(Long)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;val refresh=completionVersion;var pickDate by remember{mutableStateOf(false)}
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
  Scaffold(bottomBar={Nav(S.HOME,{},insights,settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Header(settings)};item{Hero(d,list.size,pct)};item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
@@ -86,7 +86,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  }
 }};item{GradButton("＋  Add Activity",add)}
   item{Text("Today",color=N,fontSize=21.sp,fontWeight=FontWeight.Bold);Text(list.size.toString()+" activities  •  "+d+" completed",color=M,fontSize=12.sp)}
-  items(shown){x->CardA(x,date,done(x.id,date),toggle,edit)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
+  items(shown){x->CardA(x,date,done(x.id,date),toggle,edit,delete)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
  }}
  if(pickDate) NativeDatePicker(c,date){selected->setDate(selected);pickDate=false}
 }
@@ -138,8 +138,10 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Pill(t:String,m:Modifier,on:()->Unit){Surface(m.height(50.dp).clickable{on()},RoundedCornerShape(16.dp),color=C){Box(Modifier.padding(horizontal=14.dp),Alignment.CenterStart){Text(t,color=N,fontSize=12.sp,fontWeight=FontWeight.SemiBold)}}}
 @Composable fun GradButton(t:String,on:()->Unit){Box(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).background(Brush.horizontalGradient(listOf(P,B))).clickable{on()},Alignment.Center){Text(t,color=C,fontWeight=FontWeight.Bold)}}
 
-@Composable fun CardA(x:A,date:String,isDone:Boolean,toggle:(Long)->Unit,edit:(A)->Unit){
+@Composable fun CardA(x:A,date:String,isDone:Boolean,toggle:(Long)->Unit,edit:(A)->Unit,delete:(Long)->Unit){
  val d=isDone
+ var menuOpen by remember{mutableStateOf(false)}
+ var confirmDelete by remember{mutableStateOf(false)}
  Surface(shape=RoundedCornerShape(20.dp),color=C,shadowElevation=2.dp){
   Row(Modifier.fillMaxWidth().clickable{toggle(x.id)}.padding(12.dp),verticalAlignment=Alignment.CenterVertically){
    Cat(x.cat);Spacer(Modifier.width(11.dp))
@@ -148,8 +150,17 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
     Row(Modifier.padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
      Icon(if(d) Icons.Default.CheckCircle else Icons.Default.Schedule,null,tint=if(d)G else B,modifier=Modifier.size(20.dp));Spacer(Modifier.width(5.dp));Text(if(d)"Done" else "Pending",color=if(d)G else B,fontSize=10.sp,fontWeight=FontWeight.Bold)
     }   }
-   IconButton({edit(x)},Modifier.size(42.dp)){Icon(Icons.Default.MoreVert,null,tint=M,modifier=Modifier.size(25.dp))}
+   Box{
+    IconButton({menuOpen=true},Modifier.size(42.dp)){Icon(Icons.Default.MoreVert,null,tint=M,modifier=Modifier.size(25.dp))}
+    DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}){
+     DropdownMenuItem(text={Text("Edit Activity")},onClick={menuOpen=false;edit(x)},leadingIcon={Icon(Icons.Default.Edit,null)})
+     DropdownMenuItem(text={Text("Delete Activity",color=Color(0xFFD64545))},onClick={menuOpen=false;confirmDelete=true},leadingIcon={Icon(Icons.Default.Delete,null,tint=Color(0xFFD64545))})
+    }
+   }
   }
+ }
+ if(confirmDelete){
+  AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete Activity?")},text={Text("Are you sure you want to delete \""+x.name+"\"? This action cannot be undone.")},confirmButton={TextButton(onClick={confirmDelete=false;delete(x.id)}){Text("Delete",color=Color(0xFFD64545))}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
  }
 }
 @Composable fun Cat(cat:String){val q=when(cat){"Fitness"->Triple(Icons.Default.DirectionsRun,Color(0xFFDDF9EC),G);"Health"->Triple(Icons.Default.LocalDrink,Color(0xFFE4F4FF),B);"Personal"->Triple(Icons.Default.Favorite,Color(0xFFFFE6EB),Color(0xFFE64F69));"Study"->Triple(Icons.Default.MenuBook,Color(0xFFE8E3FF),P);else->Triple(Icons.Default.Star,Color(0xFFFFEFD8),O)};Box(Modifier.size(48.dp).clip(CircleShape).background(q.second),Alignment.Center){Icon(q.first,null,tint=q.third,modifier=Modifier.size(25.dp))}}
