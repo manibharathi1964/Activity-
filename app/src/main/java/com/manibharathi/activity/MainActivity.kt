@@ -2,15 +2,9 @@ package com.manibharathi.activity
 
 import android.content.Context
 import android.content.Intent
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.Manifest
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 import java.io.ByteArrayOutputStream
 import android.graphics.pdf.PdfDocument
 import android.os.Bundle
@@ -24,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.text.style.TextAlign
-import android.app.TimePickerDialog
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,12 +59,12 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  MaterialTheme(colorScheme=lightColorScheme()){Surface(Modifier.fillMaxSize(),color=Color(0xFFF6F6FF)){
   when(s){
    S.SPLASH->Splash()
-   S.HOME->Home(list,date,filter,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++ ;list=list.toList()},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
+   S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
    S.INSIGHTS->Insights(list,date,{s=S.HOME},{s=S.REPORT},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
    S.REPORT->Report(list,{s=S.INSIGHTS},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
-   S.SETTINGS->Settings({s=S.HOME},{pendingExport=backupData(c,list);saveFile.launch("Activity-Backup.json")},{restore.launch(arrayOf("application/json"))},{scheduleReminder(c,c.getSharedPreferences("activity",Context.MODE_PRIVATE).getInt("reminderHour",8),c.getSharedPreferences("activity",Context.MODE_PRIVATE).getInt("reminderMinute",0))},{cancelReminder(c)},{requestNotification(c)},{share(c,report(list))},{Done.set.clear();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().remove("done").apply()})
+   S.SETTINGS->Settings({s=S.HOME},{pendingExport=backupData(c,list);saveFile.launch("Activity-Backup.json")},{restore.launch(arrayOf("application/json"))},{share(c,report(list))},{Done.set.clear();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().remove("done").apply()})
   }
  }}
 }
@@ -80,7 +73,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Header(settings:()->Unit){Row(Modifier.fillMaxWidth().height(64.dp),verticalAlignment=Alignment.CenterVertically){Image(painterResource(R.drawable.activity_logo),contentDescription="Activity",Modifier.size(48.dp));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text("Activity",color=P,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Plan • Track • Achieve",color=M,fontSize=11.sp)};Box{var open by remember{mutableStateOf(false)};IconButton({open=true}){Icon(Icons.Default.MoreVert,null,tint=P)};DropdownMenu(open,{open=false}){DropdownMenuItem({Text("Settings")},{open=false;settings()})}}}}
 
-@Composable fun Home(list:List<A>,date:String,filter:String,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;var pickDate by remember{mutableStateOf(false)}
+@Composable fun Home(list:List<A>,date:String,filter:String,completionVersion:Int,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;val refresh=completionVersion;var pickDate by remember{mutableStateOf(false)}
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
  Scaffold(bottomBar={Nav(S.HOME,insights,settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Header(settings)};item{Hero(d,list.size,pct)};item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
@@ -163,10 +156,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
   item{Field("Target / Goal",target,"e.g. 30 min"){target=it}}
   item{Select("Frequency",freq,listOf("Daily","Weekly","Custom")){freq=it}}
   item{Field("Start Date",today(),"Nov 26, 2025"){}}
-  item{Surface(Modifier.fillMaxWidth().clickable{TimePickerDialog(c,{_,h,m->reminderHour=h;reminderMinute=m;pref.edit().putInt("reminderHour",h).putInt("reminderMinute",m).apply()},reminderHour,reminderMinute,false).show()},RoundedCornerShape(16.dp),color=C){
-   Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFE9E4FF)),Alignment.Center){Icon(Icons.Default.Notifications,null,tint=P,modifier=Modifier.size(22.dp))};Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text("Reminder",color=N,fontWeight=FontWeight.Bold,fontSize=13.sp);Text("Choose your daily reminder time",color=M,fontSize=10.sp)};Text(timeText,color=P,fontWeight=FontWeight.Bold,fontSize=12.sp);Icon(Icons.Default.ChevronRight,null,tint=M)}
-  }}
-  item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){OutlinedButton(back,Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp)){Text("Cancel",color=P)};Button({if(name.isNotBlank()){pref.edit().putInt("reminderHour",reminderHour).putInt("reminderMinute",reminderMinute).apply();save(A(edit?.id?:System.currentTimeMillis(),name,cat,target,freq));scheduleReminder(c,reminderHour,reminderMinute)}},Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Text("Save")}}}
+  item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){OutlinedButton(back,Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp)){Text("Cancel",color=P)};Button({if(name.isNotBlank()){save(A(edit?.id?:System.currentTimeMillis(),name,cat,target,freq))}},Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Text("Save")}}}
  }}
 }
 @Composable fun Field(l:String,v:String,h:String,on:(String)->Unit){Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);OutlinedTextField(v,on,Modifier.fillMaxWidth(),placeholder={Text(h,color=M,fontSize=12.sp)},singleLine=true,shape=RoundedCornerShape(14.dp))}}
@@ -495,7 +485,7 @@ fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
  }
 }
 
-@Composable fun Settings(back:()->Unit,export:()->Unit,restore:()->Unit,remind:()->Unit,cancel:()->Unit,notify:()->Unit,share:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Settings",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Setting(Icons.Default.Notifications,"Notifications","Enable daily reminder"){notify();remind()}};item{Setting(Icons.Default.Alarm,"Reminder Schedule","Choose daily reminder time"){remind()}};item{Setting(Icons.Default.NotificationsOff,"Cancel Reminder","Turn off scheduled reminder"){cancel()}};item{Setting(Icons.Default.Storage,"Data Management","Backup & Restore"){export()}};item{Setting(Icons.Default.Restore,"Restore Backup","Import Activity JSON"){restore()}};item{Setting(Icons.Default.Share,"Export Data","Share Your Data",share)};item{Setting(Icons.Default.Info,"About App","Version 1.0.0"){} };item{OutlinedButton(reset,Modifier.fillMaxWidth().height(50.dp),shape=RoundedCornerShape(25.dp)){Text("Reset Completion History",color=Color(0xFFB63F55))}}}}}
+@Composable fun Settings(back:()->Unit,export:()->Unit,restore:()->Unit,share:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Settings",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Setting(Icons.Default.Storage,"Data Management","Backup & Restore"){export()}};item{Setting(Icons.Default.Restore,"Restore Backup","Import Activity JSON"){restore()}};item{Setting(Icons.Default.Share,"Export Data","Share Your Data",share)};item{Setting(Icons.Default.Info,"About App","Version 1.0.0"){} };item{OutlinedButton(reset,Modifier.fillMaxWidth().height(50.dp),shape=RoundedCornerShape(25.dp)){Text("Reset Completion History",color=Color(0xFFB63F55))}}}}}
 
 @Composable fun Setting(i:ImageVector,t:String,s:String,click:()->Unit){Surface(shape=RoundedCornerShape(18.dp),color=C){Row(Modifier.fillMaxWidth().clickable{click()}.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFE9E4FF)),Alignment.Center){Icon(i,null,tint=P)};Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(t,color=N,fontWeight=FontWeight.Bold,fontSize=13.sp);Text(s,color=M,fontSize=10.sp)};Icon(Icons.Default.ChevronRight,null,tint=M)}}}
 
@@ -522,9 +512,6 @@ fun buildPdf(l:List<A>):ByteArray{
  p.color=android.graphics.Color.rgb(100,58,242);p.textSize=9f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Activity • Plan • Track • Achieve",42f,820f,p)
  doc.finishPage(page);val out=ByteArrayOutputStream();doc.writeTo(out);doc.close();return out.toByteArray()
 }
-fun requestNotification(c:Context){if(Build.VERSION.SDK_INT>=33&&ContextCompat.checkSelfPermission(c,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)(c as? MainActivity)?.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS),100)}
-fun scheduleReminder(c:Context,hour:Int,minute:Int){val am=c.getSystemService(Context.ALARM_SERVICE) as AlarmManager;val pi=PendingIntent.getBroadcast(c,1001,Intent(c,ReminderReceiver::class.java),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE);val cal=java.util.Calendar.getInstance().apply{set(java.util.Calendar.HOUR_OF_DAY,hour);set(java.util.Calendar.MINUTE,minute);set(java.util.Calendar.SECOND,0);if(timeInMillis<=System.currentTimeMillis())add(java.util.Calendar.DAY_OF_YEAR,1)};am.setInexactRepeating(AlarmManager.RTC_WAKEUP,cal.timeInMillis,AlarmManager.INTERVAL_DAY,pi);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putBoolean("reminder",true).apply()}
-fun cancelReminder(c:Context){val am=c.getSystemService(Context.ALARM_SERVICE) as AlarmManager;val pi=PendingIntent.getBroadcast(c,1001,Intent(c,ReminderReceiver::class.java),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE);am.cancel(pi);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putBoolean("reminder",false).apply()}
 fun done(id:Long,d:String)=Done.set.contains(id.toString()+"|"+d)
 fun toggle(c:Context,id:Long,d:String){val k=id.toString()+"|"+d;if(!Done.set.add(k))Done.set.remove(k);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putStringSet("done",Done.set).apply()}
 fun streak():Int{var n=0;val c=Calendar.getInstance();while(n<366){val d=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time);if(Done.set.any{it.endsWith("|"+d)}){n++;c.add(Calendar.DAY_OF_MONTH,-1)}else break};return n}
