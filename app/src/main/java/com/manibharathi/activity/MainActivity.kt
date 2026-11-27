@@ -74,7 +74,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Home(list:List<A>,date:String,filter:String,completionVersion:Int,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;val refresh=completionVersion;var pickDate by remember{mutableStateOf(false)}
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
- Scaffold(bottomBar={Nav(S.HOME,{},{s= S.REPORT},settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+ Scaffold(bottomBar={Nav(S.HOME,{},insights,settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Header(settings)};item{Hero(d,list.size,pct)};item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
  Surface(Modifier.weight(1f).height(52.dp).clickable{pickDate=true},RoundedCornerShape(16.dp),color=C){
   Row(Modifier.fillMaxSize().padding(horizontal=14.dp),verticalAlignment=Alignment.CenterVertically){
@@ -347,7 +347,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  val range=remember(tab,customStart,customEnd){when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}}
  val stats=runCatching{rangeStats(l,range.first,range.second)}.getOrElse{Triple(0,0,0)}
  val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
- Scaffold(bottomBar={Nav(S.REPORT,back,{},{s= S.SETTINGS})},containerColor=Color(0xFFF6F6FF)){p->
+ Scaffold(bottomBar={Nav(S.REPORT,back,{},settings)},containerColor=Color(0xFFF6F6FF)){p->
   LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    item{Header(settings)}
    item{ReportSegmentedTabs(tab){selected->if(selected in 0..3)tab=selected}}
