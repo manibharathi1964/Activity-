@@ -119,7 +119,7 @@ public class MainActivity extends Activity {
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
         TextView eyebrow=tv(selectedDate.equals(today())?"TODAY • "+new SimpleDateFormat("EEE, d MMM",Locale.US).format(new Date()):displayDate(selectedDate),12,true);
         eyebrow.setTextColor(Color.rgb(213,224,255));top.addView(eyebrow,new LinearLayout.LayoutParams(0,dp(24),1));
-        TextView pct=tv(pct+"%",30,true);pct.setTextColor(Color.WHITE);top.addView(pct,new LinearLayout.LayoutParams(-2,dp(40)));
+        TextView pctText=tv(pct+"%",30,true);pctText.setTextColor(Color.WHITE);top.addView(pctText,new LinearLayout.LayoutParams(-2,dp(40)));
         hero.addView(top);
 
         TextView title=tv("Daily progress",25,true);title.setTextColor(Color.WHITE);
