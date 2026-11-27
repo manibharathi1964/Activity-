@@ -80,7 +80,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Header(settings:()->Unit){Row(Modifier.fillMaxWidth().height(64.dp),verticalAlignment=Alignment.CenterVertically){Image(painterResource(R.drawable.activity_logo),contentDescription="Activity",Modifier.size(48.dp));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text("Activity",color=P,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Plan • Track • Achieve",color=M,fontSize=11.sp)};Box{var open by remember{mutableStateOf(false)};IconButton({open=true}){Icon(Icons.Default.MoreVert,null,tint=P)};DropdownMenu(open,{open=false}){DropdownMenuItem({Text("Settings")},{open=false;settings()})}}}}
 
-@Composable fun Home(list:List<A>,date:String,filter:String,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;var pickDate by remember{mutableStateOf(false)}
+@Composable fun Home(list:List<A>,date:String,filter:String,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;var pickDate by remember{mutableStateOf(false)}val c=androidx.compose.ui.platform.LocalContext.current;var pickDate by remember{mutableStateOf(false)}
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
  Scaffold(bottomBar={Nav(S.HOME,insights,settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Header(settings)};item{Hero(d,list.size,pct)};item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
@@ -272,6 +272,8 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
   }
  }
 }
+@Composable fun NativeDatePicker(c:Context,initial:String,onDone:(String)->Unit){LaunchedEffect(Unit){val cal=Calendar.getInstance();runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!};android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()}}
+
 fun weekRange():String{val c=Calendar.getInstance();c.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);val a=SimpleDateFormat("MMM d",Locale.US).format(c.time);c.add(Calendar.DAY_OF_MONTH,6);return a+" – "+SimpleDateFormat("MMM d, yyyy",Locale.US).format(c.time)}
 fun monthRange():String=SimpleDateFormat("MMMM yyyy",Locale.US).format(Date())
 @Composable fun DatePickerDialog(c:Context,initial:String,onDone:(String)->Unit){val cal=runCatching{Calendar.getInstance().apply{time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!}}.getOrDefault(Calendar.getInstance());android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()}
