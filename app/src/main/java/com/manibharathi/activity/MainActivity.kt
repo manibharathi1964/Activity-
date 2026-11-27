@@ -95,8 +95,10 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 }};item{GradButton("＋  Add Activity",add)}
   item{Text("Today",color=N,fontSize=21.sp,fontWeight=FontWeight.Bold);Text(list.size.toString()+" activities  •  "+d+" completed",color=M,fontSize=12.sp)}
   items(shown){x->CardA(x,date,toggle,edit)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
- }}
+ }
+ if(pickDate) NativeDatePicker(c,date){selected->setDate(selected);pickDate=false}
 }
+
 
 @Composable fun Hero(d:Int,total:Int,pct:Int){Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(Color(0xFF512DDB),Color(0xFF159AF2)))).padding(18.dp)){Column{
  Row{Text("TODAY  •  "+display(today()),color=Color(0xFFE5DEFF),fontSize=10.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text(pct.toString()+"%",color=C,fontSize=30.sp,fontWeight=FontWeight.Bold)}
@@ -171,43 +173,113 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Select(l:String,v:String,opts:List<String>,on:(String)->Unit){var open by remember{mutableStateOf(false)};Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Box{OutlinedButton({open=true},Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(14.dp)){Text(v,Modifier.weight(1f),color=N);Icon(Icons.Default.KeyboardArrowDown,null,tint=M)};DropdownMenu(open,{open=false}){opts.forEach{DropdownMenuItem({Text(it)},{on(it);open=false})}}}}}
 
 @Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit,savePdf:()->Unit,share:()->Unit){
- var tab by remember{mutableStateOf(0)};val d=l.count{done(it.id,date)};val r=if(l.isEmpty())0 else d*100/l.size
- Column(Modifier.fillMaxSize().padding(18.dp)){Top("Insights",back)
-  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){listOf("Overview","Reports","Analytics").forEachIndexed{i,t->Text(t,Modifier.clickable{tab=i}.padding(horizontal=12.dp,vertical=10.dp),color=if(i==tab)P else M,fontSize=11.sp,fontWeight=FontWeight.Bold,textAlign=TextAlign.Center)}}
+ var tab by remember{mutableStateOf(0)}
+ Column(Modifier.fillMaxSize().padding(horizontal=18.dp)){
+  Top("Insights",back)
+  SegmentedTabs(listOf("Overview","Report","Analytical"),tab){tab=it}
+  Spacer(Modifier.height(12.dp))
   when(tab){
-   0->LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp)){item{OverallCard(r)};item{StatsRow(l,d)};item{WeeklyBars()};item{GradButton("Open Reports  →",reportGo)}}
+   0->LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(bottom=24.dp)){
+    item{OverviewPerformance(l,date)}
+    item{OverviewMetrics(l,date)}
+    item{OverviewDaily(l,date)}
+    item{GradButton("Open Report  →"){tab=1}}
+   }
    1->Report(l,{tab=0},savePdf,share)
-   2->Analytics(l,date)
+   2->Analytical(l,date)
   }
  }
 }
-@Composable fun OverallCard(r:Int){Surface(shape=RoundedCornerShape(22.dp),color=C){Row(Modifier.fillMaxWidth().padding(18.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Overall Performance",color=N,fontSize=13.sp,fontWeight=FontWeight.Bold);Text(r.toString()+"%",color=N,fontSize=36.sp,fontWeight=FontWeight.Bold);Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.TrendingUp,null,tint=G,modifier=Modifier.size(16.dp));Text("5% improvement",color=G,fontSize=10.sp,fontWeight=FontWeight.Bold)}};Box(Modifier.size(102.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,Color(0xFF18D7BF),B,P))),Alignment.Center){Box(Modifier.size(76.dp).clip(CircleShape).background(C),Alignment.Center){Icon(Icons.Default.BarChart,null,tint=B,modifier=Modifier.size(40.dp))}}}}}
-@Composable fun StatsRow(l:List<A>,d:Int){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){BM(Modifier.weight(1f),Icons.Default.Assignment,l.size.toString(),"Total",O);BM(Modifier.weight(1f),Icons.Default.CheckCircle,d.toString(),"Completed",G);BM(Modifier.weight(1f),Icons.Default.Schedule,(l.size-d).toString(),"Pending",B);BM(Modifier.weight(1f),Icons.Default.LocalFireDepartment,streak().toString(),"Streak",O)}}
-@Composable fun WeeklyBars(){Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Weekly Progress",color=N,fontWeight=FontWeight.Bold,fontSize=16.sp);Spacer(Modifier.height(14.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.Bottom){listOf(70,80,90,85,95,89,67).forEach{v->Column(Modifier.width(30.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v.toString()+"%",color=M,fontSize=8.sp);Spacer(Modifier.height(4.dp));Box(Modifier.width(24.dp).height((v*1.35f).dp).clip(RoundedCornerShape(8.dp)).background(Brush.verticalGradient(listOf(B,P))))}}};Spacer(Modifier.height(8.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun").forEach{Text(it,Modifier.width(30.dp),textAlign=TextAlign.Center,color=M,fontSize=8.sp,fontWeight=FontWeight.Bold)}}}}}
-@Composable fun Analytics(l:List<A>,date:String){
- val cats=l.groupingBy{it.cat}.eachCount();val total=maxOf(1,l.size)
- Surface(shape=RoundedCornerShape(22.dp),color=C){
-  Column(Modifier.padding(18.dp)){
-   Text("Category Analytics",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold)
-   Text("Activity distribution by category",color=M,fontSize=10.sp)
-   Spacer(Modifier.height(12.dp))
-   cats.entries.forEach{e->
-    Row(Modifier.padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
-     Text(e.key,Modifier.width(85.dp),color=N,fontSize=10.sp,fontWeight=FontWeight.Bold)
-     Box(Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE9E7F5))){
-      Box(Modifier.fillMaxWidth(e.value.toFloat()/total).fillMaxHeight().background(P))
-     }
-     Spacer(Modifier.width(8.dp));Text((e.value*100/total).toString()+"%",color=M,fontSize=9.sp)
+
+@Composable fun SegmentedTabs(labels:List<String>,selected:Int,onSelected:(Int)->Unit){
+ Surface(Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(18.dp),color=Color(0xFFEDEBFA)){
+  Row(Modifier.fillMaxSize().padding(5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)){
+   labels.forEachIndexed{index,label->
+    Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(if(index==selected)C else Color.Transparent).clickable{onSelected(index)},Alignment.Center){
+     Text(label,color=if(index==selected)N else M,fontSize=11.sp,fontWeight=if(index==selected)FontWeight.Bold else FontWeight.SemiBold)
     }
    }
   }
  }
 }
-@Composable fun BM(modifier:Modifier,i:ImageVector,v:String,l:String,c:Color){
- Surface(modifier,shape=RoundedCornerShape(17.dp),color=C){
-  Column(Modifier.padding(vertical=11.dp),horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(34.dp).clip(CircleShape).background(c.copy(alpha=.12f)),Alignment.Center){Icon(i,null,tint=c,modifier=Modifier.size(19.dp))};Spacer(Modifier.height(5.dp));Text(v,color=N,fontWeight=FontWeight.Bold,fontSize=18.sp);Text(l,color=M,fontSize=9.sp)}
+
+@Composable fun OverviewPerformance(l:List<A>,date:String){
+ val d=l.count{done(it.id,date)}
+ val pct=if(l.isEmpty())0 else d*100/l.size
+ Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+  Row(Modifier.fillMaxWidth().padding(18.dp),verticalAlignment=Alignment.CenterVertically){
+   Column(Modifier.weight(1f)){
+    Text("Overall Performance",color=N,fontSize=14.sp,fontWeight=FontWeight.Bold)
+    Text(pct.toString()+"%",color=N,fontSize=38.sp,fontWeight=FontWeight.Bold)
+    Text(if(d==l.size&&l.isNotEmpty())"All activities completed for this date." else d.toString()+" of "+l.size+" activities completed",color=M,fontSize=10.sp)
+   }
+   Box(Modifier.size(92.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,B,Color(0xFF18D7BF),P))),Alignment.Center){
+    Box(Modifier.size(68.dp).clip(CircleShape).background(C),Alignment.Center){
+     Icon(Icons.Default.BarChart,null,tint=P,modifier=Modifier.size(34.dp))
+    }
+   }
+  }
  }
 }
+
+@Composable fun OverviewMetrics(l:List<A>,date:String){
+ val total=l.size
+ val completed=l.count{done(it.id,date)}
+ val pending=total-completed
+ Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
+  MetricCard(Icons.Default.Assignment,"Total",total.toString(),O)
+  MetricCard(Icons.Default.CheckCircle,"Completed",completed.toString(),G)
+  MetricCard(Icons.Default.Schedule,"Pending",pending.toString(),B)
+ }
+}
+
+@Composable fun MetricCard(icon:ImageVector,label:String,value:String,tint:Color){
+ Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(18.dp),color=C){
+  Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=13.dp),verticalAlignment=Alignment.CenterVertically){
+   Box(Modifier.size(42.dp).clip(CircleShape).background(tint.copy(alpha=.12f)),Alignment.Center){
+    Icon(icon,null,tint=tint,modifier=Modifier.size(22.dp))
+   }
+   Spacer(Modifier.width(12.dp))
+   Text(label,color=M,fontSize=11.sp,fontWeight=FontWeight.SemiBold,modifier=Modifier.weight(1f))
+   Text(value,color=N,fontSize=23.sp,fontWeight=FontWeight.Bold)
+  }
+ }
+}
+
+@Composable fun OverviewDaily(l:List<A>,date:String){
+ Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+  Column(Modifier.padding(16.dp)){
+   Text("Selected Date Performance",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
+   Text(display(date),color=M,fontSize=10.sp)
+   Spacer(Modifier.height(10.dp))
+   DailyChart(l,date,date)
+  }
+ }
+}
+
+@Composable fun Analytical(l:List<A>,date:String){
+ Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+  Column(Modifier.padding(18.dp)){
+   Text("Analytical",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold)
+   Text("Activity distribution and selected-date completion",color=M,fontSize=10.sp)
+   Spacer(Modifier.height(12.dp))
+   val grouped=l.groupBy{it.cat}
+   grouped.entries.forEach{entry->
+    val categoryDone=entry.value.count{done(it.id,date)}
+    val categoryPct=categoryDone*100/maxOf(1,entry.value.size)
+    Row(Modifier.padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
+     Text(entry.key,Modifier.width(82.dp),color=N,fontSize=10.sp,fontWeight=FontWeight.Bold)
+     Box(Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE9E7F5))){
+      Box(Modifier.fillMaxWidth(categoryDone.toFloat()/maxOf(1,entry.value.size)).fillMaxHeight().background(P))
+     }
+     Spacer(Modifier.width(8.dp))
+     Text(categoryPct.toString()+"%",color=M,fontSize=9.sp)
+    }
+   }
+  }
+ }
+}
+
 @Composable
 fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  var shown by remember{mutableStateOf(java.util.Calendar.getInstance())}
@@ -259,28 +331,170 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  }
 }
 
-@Composable fun Report(l:List<A>,back:()->Unit,savePdf:()->Unit,share:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;
- var tab by remember{mutableStateOf(0)};var customStart by remember{mutableStateOf(today())};var customEnd by remember{mutableStateOf(today())};var pickingStart by remember{mutableStateOf(false)};var pickingEnd by remember{mutableStateOf(false)};val d=l.count{done(it.id,today())};val perf=if(l.isEmpty())0 else d*100/l.size
- Column(Modifier.fillMaxSize().padding(18.dp)){Top("Report",back)
-  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf(Triple(Icons.Default.DateRange,"Weekly",0),Triple(Icons.Default.CalendarMonth,"Monthly",1),Triple(Icons.Default.Tune,"Custom",2)).forEach{(icon,t,i)->Surface(Modifier.weight(1f).height(52.dp).clickable{tab=i},RoundedCornerShape(18.dp),color=if(tab==i)P else C){Row(Modifier.fillMaxSize().padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.Center){Icon(icon,null,tint=if(tab==i)C else P,modifier=Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text(t,color=if(tab==i)C else N,fontSize=11.sp,fontWeight=FontWeight.Bold)}}}}
-  Spacer(Modifier.height(10.dp))
-  LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp)){
-   item{Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(18.dp)){Text(if(tab==0)"Weekly Report" else if(tab==1)"Monthly Report" else "Custom Report",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold);Text(if(tab==0)weekRange() else if(tab==1)monthRange() else customStart+" – "+customEnd,color=M,fontSize=10.sp);Spacer(Modifier.height(14.dp));Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(92.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(B,Color(0xFF18D7BF),P))),Alignment.Center){Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){Text(perf.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)}};Spacer(Modifier.width(16.dp));Column{Text("Performance",color=M,fontSize=10.sp);Text(perf.toString()+"%  ↑ 5%",color=N,fontWeight=FontWeight.Bold,fontSize=17.sp);Text("✓ Achieved  "+d+" / "+maxOf(1,l.size),color=G,fontSize=10.sp);Text("🔥 Streak  "+streak()+" Days",color=O,fontSize=10.sp)}}}}}
-   item{DailyChart(l)}
-   item{if(tab==2)Surface(Modifier.clickable{pickingStart=true},shape=RoundedCornerShape(18.dp),color=C){Row(Modifier.padding(15.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DateRange,null,tint=P);Spacer(Modifier.width(10.dp));Text("Custom date range",color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text("Select",color=P,fontWeight=FontWeight.Bold)}} else Spacer(Modifier.height(1.dp))}
-   item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){Button(savePdf,Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save PDF")};OutlinedButton(share,Modifier.weight(1f)){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}}}
+@Composable fun Report(l:List<A>,back:()->Unit,savePdf:()->Unit,share:()->Unit){
+ val c=androidx.compose.ui.platform.LocalContext.current
+ var tab by remember{mutableStateOf(0)}
+ var customStart by remember{mutableStateOf(today())}
+ var customEnd by remember{mutableStateOf(today())}
+ var pickingStart by remember{mutableStateOf(false)}
+ var pickingEnd by remember{mutableStateOf(false)}
+ val range=when(tab){0->weekBounds();1->monthBounds();else->normalizeRange(customStart,customEnd)}
+ val stats=rangeStats(l,range.first,range.second)
+ Column(Modifier.fillMaxSize().padding(horizontal=18.dp)){
+  Top("Report",back)
+  ReportSegmentedTabs(tab){tab=it}
+  Spacer(Modifier.height(12.dp))
+  LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(bottom=24.dp)){
+   item{
+    Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+     Column(Modifier.padding(18.dp)){
+      Text(if(tab==0)"Weekly Report" else if(tab==1)"Monthly Report" else "Custom Report",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold)
+      Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
+      Spacer(Modifier.height(14.dp))
+      Row(verticalAlignment=Alignment.CenterVertically){
+       Box(Modifier.size(92.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(B,Color(0xFF18D7BF),P))),Alignment.Center){
+        Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){
+         Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)
+        }
+       }
+       Spacer(Modifier.width(16.dp))
+       Column{
+        Text("Performance",color=M,fontSize=10.sp)
+        Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=17.sp)
+        Text("✓ Completed  "+stats.first+" / "+stats.second,color=G,fontSize=10.sp)
+        Text("🔥 Streak  "+streak()+" Days",color=O,fontSize=10.sp)
+       }
+      }
+     }
+    }
+   }
+   item{DailyChart(l,range.first,range.second)}
+   if(tab==2){
+    item{
+     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+      DateRangeButton("Start",customStart,Modifier.weight(1f)){pickingStart=true}
+      DateRangeButton("End",customEnd,Modifier.weight(1f)){pickingEnd=true}
+     }
+    }
+   }
+   item{
+    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
+     Button(savePdf,Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){
+      Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save PDF")
+     }
+     OutlinedButton(share,Modifier.weight(1f)){
+      Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")
+     }
+    }
+   }
   }
-  if(pickingStart) NativeDatePicker(c,customStart){customStart=it;pickingStart=false;pickingEnd=true}
+  if(pickingStart) NativeDatePicker(c,customStart){customStart=it;pickingStart=false}
   if(pickingEnd) NativeDatePicker(c,customEnd){customEnd=it;pickingEnd=false}
  }
 }
-@Composable fun NativeDatePicker(c:Context,initial:String,onDone:(String)->Unit){LaunchedEffect(Unit){val cal=Calendar.getInstance();runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!};android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()}}
 
-fun weekRange():String{val c=Calendar.getInstance();c.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);val a=SimpleDateFormat("MMM d",Locale.US).format(c.time);c.add(Calendar.DAY_OF_MONTH,6);return a+" – "+SimpleDateFormat("MMM d, yyyy",Locale.US).format(c.time)}
-fun monthRange():String=SimpleDateFormat("MMMM yyyy",Locale.US).format(Date())
-@Composable fun DatePickerDialog(c:Context,initial:String,onDone:(String)->Unit){val cal=runCatching{Calendar.getInstance().apply{time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!}}.getOrDefault(Calendar.getInstance());android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()}
+@Composable fun ReportSegmentedTabs(selected:Int,onSelected:(Int)->Unit){
+ SegmentedTabs(listOf("Weekly","Monthly","Custom"),selected,onSelected)
+}
 
-@Composable fun DailyChart(l:List<A>){val vals=(0..6).map{offset->val cal=Calendar.getInstance().apply{set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);add(Calendar.DAY_OF_MONTH,offset)};val ds=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(cal.time);if(l.isEmpty())0 else l.count{done(it.id,ds)}*100/l.size};Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Daily Performance",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.height(8.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){vals.forEach{Text(it.toString()+"%",color=M,fontSize=8.sp)}};Canvas(Modifier.fillMaxWidth().height(130.dp).padding(horizontal=4.dp)){val w=size.width;val h=size.height;val pts=vals.mapIndexed{idx,v->androidx.compose.ui.geometry.Offset(idx*(w/(vals.size-1)),h-(v/100f*h))};for(i in 0 until pts.lastIndex){drawLine(P,pts[i],pts[i+1],strokeWidth=5f)};pts.forEach{drawCircle(B,7f,it)}};Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun").forEach{Text(it,color=M,fontSize=8.sp,fontWeight=FontWeight.Bold)}}}}}
+@Composable fun DateRangeButton(label:String,value:String,modifier:Modifier,onClick:()->Unit){
+ Surface(modifier.height(64.dp).clickable{onClick()},shape=RoundedCornerShape(18.dp),color=C){
+  Row(Modifier.fillMaxSize().padding(horizontal=14.dp),verticalAlignment=Alignment.CenterVertically){
+   Icon(Icons.Default.DateRange,null,tint=P,modifier=Modifier.size(20.dp))
+   Spacer(Modifier.width(8.dp))
+   Column(Modifier.weight(1f)){
+    Text(label,color=M,fontSize=9.sp)
+    Text(display(value),color=N,fontSize=11.sp,fontWeight=FontWeight.Bold)
+   }
+   Icon(Icons.Default.KeyboardArrowDown,null,tint=M)
+  }
+ }
+}
+
+@Composable fun NativeDatePicker(c:Context,initial:String,onDone:(String)->Unit){
+ LaunchedEffect(Unit){
+  val cal=Calendar.getInstance()
+  runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!}
+  android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()
+ }
+}
+
+fun parseDay(s:String):Calendar=Calendar.getInstance().apply{
+ time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(s)?:Date()
+ set(Calendar.HOUR_OF_DAY,0);set(Calendar.MINUTE,0);set(Calendar.SECOND,0);set(Calendar.MILLISECOND,0)
+}
+
+fun normalizeRange(start:String,end:String):Pair<String,String>{
+ return if(start<=end)Pair(start,end) else Pair(end,start)
+}
+
+fun weekBounds():Pair<String,String>{
+ val c=Calendar.getInstance()
+ c.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY)
+ val start=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time)
+ c.add(Calendar.DAY_OF_MONTH,6)
+ val end=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time)
+ return Pair(start,end)
+}
+
+fun monthBounds():Pair<String,String>{
+ val c=Calendar.getInstance()
+ c.set(Calendar.DAY_OF_MONTH,1)
+ val start=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time)
+ c.set(Calendar.DAY_OF_MONTH,c.getActualMaximum(Calendar.DAY_OF_MONTH))
+ val end=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time)
+ return Pair(start,end)
+}
+
+fun formatRange(start:String,end:String):String=display(start)+" – "+display(end)
+
+fun rangeDates(start:String,end:String):List<String>{
+ val out=mutableListOf<String>()
+ val c=parseDay(start)
+ val e=parseDay(end)
+ while(!c.after(e)){
+  out.add(SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time))
+  c.add(Calendar.DAY_OF_MONTH,1)
+ }
+ return out
+}
+
+fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
+ val dates=rangeDates(start,end)
+ val completed=dates.sumOf{d->l.count{done(it.id,d)}}
+ val possible=l.size*dates.size
+ val pct=if(possible==0)0 else completed*100/possible
+ return Triple(completed,possible,pct)
+}
+
+@Composable fun DailyChart(l:List<A>,start:String,end:String){
+ val dates=rangeDates(start,end)
+ val points=dates.map{d->if(l.isEmpty())0 else l.count{done(it.id,d)}*100/l.size}
+ val visible=if(points.size<=14)points else points.mapIndexed{index,_->val from=(index*points.size/14);val to=minOf(points.size,(index+1)*points.size/14);points.subList(from,to).average().toInt()}
+ val labels=if(dates.size<=14)dates else visible.indices.map{dates[minOf(dates.lastIndex,it*dates.size/visible.size)]}
+ Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+  Column(Modifier.padding(16.dp)){
+   Text("Daily Performance",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
+   Text(formatRange(start,end),color=M,fontSize=10.sp)
+   Spacer(Modifier.height(8.dp))
+   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){visible.forEach{Text(it.toString()+"%",color=M,fontSize=8.sp)}}
+   Canvas(Modifier.fillMaxWidth().height(140.dp).padding(horizontal=4.dp)){
+    val w=size.width
+    val h=size.height
+    if(visible.size==1){
+     val y=h-(visible[0]/100f*h)
+     drawCircle(B,7f,androidx.compose.ui.geometry.Offset(w/2f,y))
+    }else if(visible.size>1){
+     val pts=visible.mapIndexed{idx,v->androidx.compose.ui.geometry.Offset(idx*(w/(visible.size-1)),h-(v/100f*h))}
+     for(i in 0 until pts.lastIndex)drawLine(P,pts[i],pts[i+1],strokeWidth=5f)
+     pts.forEach{drawCircle(B,6f,it)}
+    }
+   }
+   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){labels.forEach{Text(display(it),color=M,fontSize=7.sp,fontWeight=FontWeight.Bold)}}
+  }
+ }
+}
+
 @Composable fun Settings(back:()->Unit,export:()->Unit,restore:()->Unit,remind:()->Unit,cancel:()->Unit,notify:()->Unit,share:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Settings",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Setting(Icons.Default.Notifications,"Notifications","Enable daily reminder"){notify();remind()}};item{Setting(Icons.Default.Alarm,"Reminder Schedule","Choose daily reminder time"){remind()}};item{Setting(Icons.Default.NotificationsOff,"Cancel Reminder","Turn off scheduled reminder"){cancel()}};item{Setting(Icons.Default.Storage,"Data Management","Backup & Restore"){export()}};item{Setting(Icons.Default.Restore,"Restore Backup","Import Activity JSON"){restore()}};item{Setting(Icons.Default.Share,"Export Data","Share Your Data",share)};item{Setting(Icons.Default.Info,"About App","Version 1.0.0"){} };item{Setting(Icons.Default.Security,"Privacy Policy","Read Our Policy"){} };item{Setting(Icons.Default.Star,"Rate Us","Give 5 Stars"){} };item{OutlinedButton(reset,Modifier.fillMaxWidth().height(50.dp),shape=RoundedCornerShape(25.dp)){Text("Reset Completion History",color=Color(0xFFB63F55))}}}}}
 
 @Composable fun Setting(i:ImageVector,t:String,s:String,click:()->Unit){Surface(shape=RoundedCornerShape(18.dp),color=C){Row(Modifier.fillMaxWidth().clickable{click()}.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFE9E4FF)),Alignment.Center){Icon(i,null,tint=P)};Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(t,color=N,fontWeight=FontWeight.Bold,fontSize=13.sp);Text(s,color=M,fontSize=10.sp)};Icon(Icons.Default.ChevronRight,null,tint=M)}}}
