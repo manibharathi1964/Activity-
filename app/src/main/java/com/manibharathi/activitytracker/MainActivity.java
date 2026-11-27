@@ -14,7 +14,7 @@ import java.text.*;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    static final int PURPLE=Color.rgb(81,70,229), BLUE=Color.rgb(55,174,225), TEXT=Color.rgb(18,27,48), BG=Color.rgb(246,248,253);
+    static final int PURPLE=Color.rgb(38,92,255), BLUE=Color.rgb(23,184,166), TEXT=Color.rgb(20,28,45), BG=Color.rgb(245,247,251);
     LinearLayout root, content; SharedPreferences prefs; boolean dark=false; String selectedDate;
     ArrayList<Habit> habits=new ArrayList<>();
 
@@ -69,10 +69,10 @@ public class MainActivity extends Activity {
     void header(){
         LinearLayout h=box(); h.setOrientation(LinearLayout.HORIZONTAL); h.setGravity(Gravity.CENTER_VERTICAL);
         TextView icon=tv("☑",30,true); icon.setGravity(Gravity.CENTER); icon.setTextColor(Color.WHITE); icon.setBackground(rounded(PURPLE,32));
-        h.addView(icon,new LinearLayout.LayoutParams(80,80));
+        h.addView(icon,new LinearLayout.LayoutParams(84,84));
         LinearLayout names=new LinearLayout(this); names.setOrientation(LinearLayout.VERTICAL); names.setPadding(20,0,0,0);
-        TextView title=tv("My Activity Tracker",24,true); title.setTextColor(BLUE); names.addView(title);
-        names.addView(tv("Advanced Habit & Goal Manager",15,true)); h.addView(names,new LinearLayout.LayoutParams(0,80,1));
+        TextView title=tv("Activity",26,true); title.setTextColor(BLUE); names.addView(title);
+        names.addView(tv("Habit & Goal Manager",14,true)); h.addView(names,new LinearLayout.LayoutParams(0,80,1));
         Button settings=new Button(this); settings.setText("⚙"); settings.setTextSize(24); settings.setAllCaps(false); settings.setBackground(rounded(dark?Color.rgb(40,44,58):Color.rgb(248,249,253),24)); settings.setOnClickListener(v->settingsDialog());
         h.addView(settings,new LinearLayout.LayoutParams(76,76));
         content.addView(h,new LinearLayout.LayoutParams(-1,120));
@@ -80,9 +80,9 @@ public class MainActivity extends Activity {
 
     void progressCard(){
         int total=habits.size(), done=completedCount(selectedDate), pct=total==0?0:(done*100/total);
-        LinearLayout p=box(); TextView row=tv("Today's Progress                         "+pct+"% Completed",19,true); p.addView(row,new LinearLayout.LayoutParams(-1,55));
+        LinearLayout p=box(); TextView row=tv("Today's Progress                              "+pct+"%",19,true); p.addView(row,new LinearLayout.LayoutParams(-1,55));
         ProgressBar bar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal); bar.setMax(100); bar.setProgress(pct); bar.setProgressTintList(android.content.res.ColorStateList.valueOf(PURPLE)); p.addView(bar,new LinearLayout.LayoutParams(-1,28));
-        TextView stats=tv("Completed: "+done+"/"+total+"                              🔥 Streak: "+streak()+" Days",15,true); stats.setTextColor(text()); p.addView(stats,new LinearLayout.LayoutParams(-1,55));
+        TextView stats=tv("Completed: "+done+"/"+total+"                         Streak: "+streak()+" days",15,true); stats.setTextColor(text()); p.addView(stats,new LinearLayout.LayoutParams(-1,55));
         content.addView(p,new LinearLayout.LayoutParams(-1,190));
     }
 
@@ -92,8 +92,8 @@ public class MainActivity extends Activity {
         r.addView(date,new LinearLayout.LayoutParams(0,76,1));
         Button filter=new Button(this); filter.setText("⚑"); filter.setTextSize(20); filter.setAllCaps(false); filter.setBackground(rounded(card(),24)); filter.setOnClickListener(v->filterDialog());
         r.addView(filter,new LinearLayout.LayoutParams(78,76));
-        Button add=new Button(this); add.setText("+ Add"); add.setTextSize(17); add.setAllCaps(false); add.setTextColor(Color.WHITE); add.setBackground(rounded(PURPLE,24)); add.setOnClickListener(v->addHabitDialog(null));
-        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(145,76); ap.setMargins(12,0,0,0); r.addView(add,ap);
+        Button add=new Button(this); add.setText("+ Add Activity"); add.setTextSize(17); add.setAllCaps(false); add.setTextColor(Color.WHITE); add.setBackground(rounded(PURPLE,24)); add.setOnClickListener(v->addHabitDialog(null));
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(170,76); ap.setMargins(12,0,0,0); r.addView(add,ap);
         content.addView(r);
     }
 
