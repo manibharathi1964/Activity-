@@ -165,7 +165,6 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit,savePdf:()->Unit,share:()->Unit){
  var tab by remember{mutableStateOf(0)}
  Column(Modifier.fillMaxSize().padding(horizontal=18.dp).padding(top=8.dp)){
-  Top("Insights",back)
   SegmentedTabs(listOf("Overview","Report","Analytical"),tab){tab=it}
   Spacer(Modifier.height(12.dp))
   when(tab){
