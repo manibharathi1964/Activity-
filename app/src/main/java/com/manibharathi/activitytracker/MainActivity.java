@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
         h.addView(logo,new LinearLayout.LayoutParams(dp(62),dp(62)));
         LinearLayout nameBox=new LinearLayout(this);nameBox.setOrientation(LinearLayout.VERTICAL);nameBox.setPadding(dp(12),0,0,0);
         TextView title=tv("Activity",29,true);title.setTextColor(PURPLE);nameBox.addView(title,new LinearLayout.LayoutParams(-1,dp(36)));
-        nameBox.addView(small("Plan less. Do more.")).setPadding(0,0,0,0);
+        nameBox.addView(small("Plan less. Do more."));
         h.addView(nameBox,new LinearLayout.LayoutParams(0,dp(62),1));
         TextView menu=button("⋯",surface(),text(),23,18);menu.setContentDescription("Settings");menu.setOnClickListener(v->settingsDialog());
         h.addView(menu,new LinearLayout.LayoutParams(dp(50),dp(46)));
@@ -84,20 +84,20 @@ public class MainActivity extends Activity {
     }
 
     void progressHero(){
-        int total=habits.size(), done=completedCount(selectedDate), pct=total==0?0:done*100/total;
+        int total=habits.size(), done=completedCount(selectedDate), percent=total==0?0:done*100/total;
         LinearLayout hero=new LinearLayout(this);hero.setOrientation(LinearLayout.VERTICAL);hero.setPadding(dp(20),dp(19),dp(20),dp(18));
         hero.setBackground(gradient(Color.rgb(39,32,91),Color.rgb(108,92,231),28));hero.setElevation(dp(2));
 
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
         TextView label=tv(selectedDate.equals(today())?"TODAY  •  "+displayDate(selectedDate):displayDate(selectedDate),11,true);label.setTextColor(Color.rgb(220,216,255));
         top.addView(label,new LinearLayout.LayoutParams(0,dp(24),1));
-        TextView pct=tv(pct+"%",30,true);pct.setTextColor(WHITE);top.addView(pct,new LinearLayout.LayoutParams(-2,dp(38)));
+        TextView pctView=tv(percent+"%",30,true);pctView.setTextColor(WHITE);top.addView(pctView,new LinearLayout.LayoutParams(-2,dp(38)));
         hero.addView(top);
         TextView title=tv(done==0?"Ready for a productive day?":done==total?"Day completed. Nice work!":"Keep the momentum going.",22,true);title.setTextColor(WHITE);
         LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,dp(32));tp.setMargins(0,dp(3),0,0);hero.addView(title,tp);
         TextView msg=tv(done==0?"Complete one activity to start your streak.":(total-done)+" activities remaining today.",12,false);msg.setTextColor(Color.rgb(224,221,255));
         hero.addView(msg,new LinearLayout.LayoutParams(-1,dp(26)));
-        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(pct);
+        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(percent);
         p.setProgressTintList(ColorStateList.valueOf(WHITE));p.setProgressBackgroundTintList(ColorStateList.valueOf(Color.argb(65,255,255,255)));
         LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,dp(8));pp.setMargins(0,dp(9),0,dp(12));hero.addView(p,pp);
         LinearLayout stats=new LinearLayout(this);
@@ -218,10 +218,10 @@ public class MainActivity extends Activity {
     void renderReport(String from,String to){
         int days=daysBetween(from,to),total=habits.size()*Math.max(days,0),achieved=0;Calendar c=Calendar.getInstance();try{c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(from));}catch(Exception ignored){}
         StringBuilder rows=new StringBuilder();for(int i=0;i<days;i++){String d=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime());int done=completedCount(d);achieved+=done;rows.append(displayDateLong(d)).append("    ").append(done).append("/").append(habits.size()).append("    ").append(habits.size()==0?0:done*100/habits.size()).append("%\n");c.add(Calendar.DAY_OF_MONTH,1);}
-        int score=total==0?0:achieved*100/total;LinearLayout score=card(22);score.addView(tv("Performance",16,true),new LinearLayout.LayoutParams(-1,dp(30)));
-        TextView big=tv(score+"%",38,true);big.setTextColor(PURPLE);score.addView(big,new LinearLayout.LayoutParams(-1,dp(50)));
-        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(score);p.setProgressTintList(ColorStateList.valueOf(PURPLE));score.addView(p,new LinearLayout.LayoutParams(-1,dp(8)));
-        score.addView(small(achieved+" completed  •  "+total+" scheduled check-ins"),new LinearLayout.LayoutParams(-1,dp(26)));content.addView(score);gap(12);
+        int scoreValue=total==0?0:achieved*100/total;LinearLayout scoreCard=card(22);scoreCard.addView(tv("Performance",16,true),new LinearLayout.LayoutParams(-1,dp(30)));
+        TextView big=tv(scoreValue+"%",38,true);big.setTextColor(PURPLE);scoreCard.addView(big,new LinearLayout.LayoutParams(-1,dp(50)));
+        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(scoreValue);p.setProgressTintList(ColorStateList.valueOf(PURPLE));scoreCard.addView(p,new LinearLayout.LayoutParams(-1,dp(8)));
+        scoreCard.addView(small(achieved+" completed  •  "+total+" scheduled check-ins"),new LinearLayout.LayoutParams(-1,dp(26)));content.addView(scoreCard);gap(12);
         LinearLayout detail=card(22);detail.addView(tv("Daily activity",16,true),new LinearLayout.LayoutParams(-1,dp(30)));TextView rowsV=small(rows.length()==0?"No report data.":rows.toString());detail.addView(rowsV);content.addView(detail);
     }
 
