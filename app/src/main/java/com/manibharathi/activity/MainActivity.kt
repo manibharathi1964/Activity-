@@ -90,13 +90,13 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun GradButton(t:String,on:()->Unit){Box(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).background(Brush.horizontalGradient(listOf(P,B))).clickable{on()},Alignment.Center){Text(t,color=C,fontWeight=FontWeight.Bold)}}
 
 @Composable fun CardA(x:A,date:String,toggle:(Long)->Unit,edit:(A)->Unit){val d=done(x.id,date);Surface(shape=RoundedCornerShape(20.dp),color=C,shadowElevation=2.dp){Column(Modifier.clickable{toggle(x.id)}.padding(12.dp)){
- Row(Alignment.CenterVertically){Cat(x.cat);Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(x.name,color=N,fontSize=14.sp,fontWeight=FontWeight.Bold);Text(x.target.ifBlank{"No target"}+"  •  "+x.freq,color=M,fontSize=10.sp)}
+ Row(verticalAlignment=Alignment.CenterVertically){Cat(x.cat);Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(x.name,color=N,fontSize=14.sp,fontWeight=FontWeight.Bold);Text(x.target.ifBlank{"No target"}+"  •  "+x.freq,color=M,fontSize=10.sp)}
  Surface(shape=RoundedCornerShape(18.dp),color=if(d)Color(0xFFDDF8E9) else Color(0xFFE8F0FF)){Text(if(d)"✓ Done" else "◷ Pending",Modifier.padding(horizontal=8.dp,vertical=6.dp),color=if(d)G else B,fontSize=9.sp,fontWeight=FontWeight.Bold)}
  IconButton({edit(x)},Modifier.size(32.dp)){Icon(Icons.Default.MoreVert,null,tint=M)}};Row(Modifier.padding(start=58.dp,top=4.dp)){Text(x.cat,color=M,fontSize=10.sp);Spacer(Modifier.weight(1f));Text(if(d)"✓" else "◷",color=if(d)G else B,fontWeight=FontWeight.Bold)}}}}
 @Composable fun Cat(cat:String){val q=when(cat){"Fitness"->Triple(Icons.Default.DirectionsRun,Color(0xFFDDF9EC),G);"Health"->Triple(Icons.Default.LocalDrink,Color(0xFFE4F4FF),B);"Personal"->Triple(Icons.Default.Favorite,Color(0xFFFFE6EB),Color(0xFFE64F69));"Study"->Triple(Icons.Default.MenuBook,Color(0xFFE8E3FF),P);else->Triple(Icons.Default.Star,Color(0xFFFFEFD8),O)};Box(Modifier.size(48.dp).clip(CircleShape).background(q.second),Alignment.Center){Icon(q.first,null,tint=q.third,modifier=Modifier.size(25.dp))}}
 @Composable fun Empty(add:()->Unit){Surface(shape=RoundedCornerShape(24.dp),color=C){Column(Modifier.fillMaxWidth().padding(28.dp),horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFEAE3FF)),Alignment.Center){Text("+",color=P,fontSize=30.sp)};Text("Build your day",color=N,fontSize=19.sp,fontWeight=FontWeight.Bold);Text("Add your first activity and start tracking.",color=M,fontSize=12.sp);TextButton(add){Text("Add Activity",color=P)}}}}
 @Composable fun Quick(l:List<A>,date:String,go:()->Unit){val d=l.count{done(it.id,date)};Surface(shape=RoundedCornerShape(24.dp),color=C){Column(Modifier.padding(16.dp)){Row{Text("Quick Insights",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(go){Text("View report  →",color=P,fontSize=10.sp)}};Row{Metric(l.size.toString(),"Total",P);Metric(d.toString(),"Completed",G);Metric((l.size-d).toString(),"Pending",O);Metric((if(l.isEmpty())0 else d*100/l.size).toString()+"%","Success",P)}}}}
-@Composable fun Metric(v:String,l:String,c:Color){Column(Modifier.weight(1f),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontSize=18.sp,fontWeight=FontWeight.Bold);Text(l,color=M,fontSize=9.sp)}}
+@Composable fun Metric(v:String,l:String,c:Color){Column(Modifier.width(75.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontSize=18.sp,fontWeight=FontWeight.Bold);Text(l,color=M,fontSize=9.sp)}}
 
 @Composable fun Nav(active:S,insights:()->Unit,settings:()->Unit){NavigationBar(containerColor=C){NavigationBarItem(active==S.HOME,{},{Icon(Icons.Default.Home,null)},label={Text("Home",fontSize=10.sp)});NavigationBarItem(active==S.INSIGHTS,insights,{Icon(Icons.Default.BarChart,null)},label={Text("Insights",fontSize=10.sp)});NavigationBarItem(active==S.SETTINGS,settings,{Icon(Icons.Default.Settings,null)},label={Text("Settings",fontSize=10.sp)})}}
 
@@ -107,9 +107,58 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Select(l:String,v:String,opts:List<String>,on:(String)->Unit){var open by remember{mutableStateOf(false)};Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Box{OutlinedButton({open=true},Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(14.dp)){Text(v,Modifier.weight(1f),color=N);Icon(Icons.Default.KeyboardArrowDown,null,tint=M)};DropdownMenu(open,{open=false}){opts.forEach{DropdownMenuItem({Text(it)},{on(it);open=false})}}}}}
 
 @Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit){val d=l.count{done(it.id,date)};val r=if(l.isEmpty())0 else d*100/l.size;Column(Modifier.fillMaxSize().padding(18.dp)){Top("Insights",back);Row{listOf("Overview","Reports","Analytics").forEachIndexed{i,t->Text(t,Modifier.padding(14.dp),color=if(i==0)P else M,fontSize=11.sp,fontWeight=FontWeight.Bold)}};LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp)){item{Surface(shape=RoundedCornerShape(22.dp),color=C){Row(Modifier.padding(18.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Overall Performance",color=N,fontSize=13.sp,fontWeight=FontWeight.Bold);Text(r.toString()+"%",color=N,fontSize=34.sp,fontWeight=FontWeight.Bold);Text("↑ 5%",color=G,fontWeight=FontWeight.Bold)};Box(Modifier.size(96.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,Color(0xFF18D7BF),B,P))),Alignment.Center){Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){Icon(Icons.Default.BarChart,null,tint=B,modifier=Modifier.size(38.dp))}}}}};item{Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){BM(l.size.toString(),"Total",O);BM(d.toString(),"Completed",G);BM((l.size-d).toString(),"Pending",B);BM(streak().toString(),"Streak",O)}};item{Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Weekly Progress",color=N,fontWeight=FontWeight.Bold);Spacer(Modifier.height(10.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.Bottom){listOf(70,80,90,85,95,89,67).forEach{v->Box(Modifier.width(25.dp).height((v/2).dp).clip(RoundedCornerShape(7.dp)).background(Brush.verticalGradient(listOf(B,P))))}};Text("Mon   Tue   Wed   Thu   Fri   Sat   Sun",color=M,fontSize=8.sp)}}};item{GradButton("Open Reports  →",reportGo)}}}}
-@Composable fun BM(v:String,l:String,c:Color){Surface(Modifier.weight(1f),shape=RoundedCornerShape(17.dp),color=C){Column(Modifier.padding(vertical=11.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontWeight=FontWeight.Bold,fontSize=18.sp);Text(l,color=M,fontSize=9.sp)}}}
+@Composable fun BM(v:String,l:String,c:Color){Surface(Modifier.width(75.dp),shape=RoundedCornerShape(17.dp),color=C){Column(Modifier.padding(vertical=11.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontWeight=FontWeight.Bold,fontSize=18.sp);Text(l,color=M,fontSize=9.sp)}}}
 
-@Composable fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){var shown by remember{mutableStateOf(java.util.Calendar.getInstance())};Column(Modifier.fillMaxSize().padding(18.dp)){Top("Calendar",back);Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){IconButton({shown.add(java.util.Calendar.MONTH,-1)}){Icon(Icons.Default.ChevronLeft,null,tint=N)};Text(SimpleDateFormat("MMMM yyyy",Locale.US).format(shown.time),Modifier.weight(1f),color=N,fontSize=19.sp,fontWeight=FontWeight.Bold);IconButton({shown.add(java.util.Calendar.MONTH,1)}){Icon(Icons.Default.ChevronRight,null,tint=N)}};Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(10.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){listOf("S","M","T","W","T","F","S").forEach{Text(it,Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=M,fontSize=10.sp,fontWeight=FontWeight.Bold)}};val first=(shown.clone() as java.util.Calendar).apply{set(java.util.Calendar.DAY_OF_MONTH,1)};val offset=first.get(java.util.Calendar.DAY_OF_WEEK)-1;val max=shown.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);for(row in 0..5){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){for(col in 0..6){val n=row*7+col-offset;if(n in 1..max){val ds=SimpleDateFormat("yyyy-MM-dd",Locale.US).format((shown.clone() as java.util.Calendar).apply{set(java.util.Calendar.DAY_OF_MONTH,n)}.time);val selected=ds==date;Surface(Modifier.weight(1f).padding(3.dp).clickable{choose(ds)},shape=CircleShape,color=if(selected)P else Color.Transparent){Box(Modifier.size(34.dp),Alignment.Center){Text(n.toString(),color=if(selected)C else N,fontSize=11.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Normal)}}}else{Spacer(Modifier.weight(1f).height(40.dp))}}}}}};Spacer(Modifier.height(12.dp));Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Activities",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);l.forEach{Row(Modifier.padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){Cat(it.cat);Spacer(Modifier.width(8.dp));Text(it.name,color=N,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(if(done(it.id,date))"✓ Done" else "◷ Pending",color=if(done(it.id,date))G else B,fontSize=9.sp,fontWeight=FontWeight.Bold)}}}}}}}
+@Composable
+fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
+ var shown by remember{mutableStateOf(java.util.Calendar.getInstance())}
+ Column(Modifier.fillMaxSize().padding(18.dp)){
+  Top("Calendar",back)
+  Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
+   IconButton({shown.add(java.util.Calendar.MONTH,-1)}){Icon(Icons.Default.ChevronLeft,null,tint=N)}
+   Text(SimpleDateFormat("MMMM yyyy",Locale.US).format(shown.time),Modifier.weight(1f),color=N,fontSize=19.sp,fontWeight=FontWeight.Bold)
+   IconButton({shown.add(java.util.Calendar.MONTH,1)}){Icon(Icons.Default.ChevronRight,null,tint=N)}
+  }
+  Surface(shape=RoundedCornerShape(22.dp),color=C){
+   Column(Modifier.padding(10.dp)){
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
+     listOf("S","M","T","W","T","F","S").forEach{Text(it,Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=M,fontSize=10.sp,fontWeight=FontWeight.Bold)}
+    }
+    val first=(shown.clone() as java.util.Calendar).apply{set(java.util.Calendar.DAY_OF_MONTH,1)}
+    val offset=first.get(java.util.Calendar.DAY_OF_WEEK)-1
+    val max=shown.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+    repeat(6){row->
+     Row(Modifier.fillMaxWidth()){
+      repeat(7){col->
+       val n=row*7+col-offset
+       if(n in 1..max){
+        val cal=(shown.clone() as java.util.Calendar).apply{set(java.util.Calendar.DAY_OF_MONTH,n)}
+        val ds=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(cal.time)
+        val selected=ds==date
+        Box(Modifier.weight(1f).padding(3.dp),contentAlignment=Alignment.Center){
+         Surface(Modifier.size(34.dp).clickable{choose(ds)},shape=CircleShape,color=if(selected)P else Color.Transparent){
+          Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text(n.toString(),color=if(selected)C else N,fontSize=11.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Normal)}
+         }
+        }
+       }else{Spacer(Modifier.weight(1f).height(40.dp))}
+      }
+     }
+    }
+   }
+  }
+  Spacer(Modifier.height(12.dp))
+  Surface(shape=RoundedCornerShape(22.dp),color=C){
+   Column(Modifier.padding(16.dp)){
+    Text("Activities",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
+    l.forEach{item->
+     Row(Modifier.padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
+      Cat(item.cat);Spacer(Modifier.width(8.dp));Text(item.name,color=N,fontSize=11.sp);Spacer(Modifier.weight(1f));Text(if(done(item.id,date))"✓ Done" else "◷ Pending",color=if(done(item.id,date))G else B,fontSize=9.sp,fontWeight=FontWeight.Bold)
+     }
+    }
+   }
+  }
+ }
+}
 
 @Composable fun Report(l:List<A>,back:()->Unit,savePdf:()->Unit,share:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Report",back);Row{listOf("Weekly","Monthly","Custom").forEachIndexed{i,t->Surface(shape=RoundedCornerShape(20.dp),color=if(i==0)P else C){Text(t,Modifier.padding(horizontal=16.dp,vertical=9.dp),color=if(i==0)C else N,fontSize=11.sp,fontWeight=FontWeight.Bold)}}};Spacer(Modifier.height(10.dp));LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp)){item{Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(18.dp)){Text("Nov 23 – Nov 29, 2025",color=N,fontWeight=FontWeight.Bold);Row(Modifier.padding(top=12.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(88.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(B,Color(0xFF18D7BF),P))),Alignment.Center){Box(Modifier.size(70.dp).clip(CircleShape).background(C),Alignment.Center){Text("85%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)}};Spacer(Modifier.width(15.dp));Column{Text("Performance",color=M,fontSize=10.sp);Text("85%  ↑ 5%",color=N,fontWeight=FontWeight.Bold,fontSize=17.sp);Text("✓ Achieved  5 / "+maxOf(1,l.size),color=G,fontSize=10.sp);Text("🔥 Streak  7 Days",color=O,fontSize=10.sp)}}}}};item{Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Daily Performance",color=N,fontWeight=FontWeight.Bold);Text("70%   80%   90%   85%   95%   89%   67%",Modifier.padding(top=12.dp),color=P,fontWeight=FontWeight.Bold,fontSize=11.sp)}}};item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){Button(savePdf,Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Download,null);Spacer(Modifier.width(5.dp));Text("Save PDF")};OutlinedButton(share,Modifier.weight(1f)){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}}}}}}
 
