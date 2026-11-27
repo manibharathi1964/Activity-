@@ -197,24 +197,6 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Field(l:String,v:String,h:String,on:(String)->Unit){Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);OutlinedTextField(v,on,Modifier.fillMaxWidth(),placeholder={Text(h,color=M,fontSize=12.sp)},singleLine=true,shape=RoundedCornerShape(14.dp))}}
 @Composable fun Select(l:String,v:String,opts:List<String>,on:(String)->Unit){var open by remember{mutableStateOf(false)};Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Box{OutlinedButton({open=true},Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(14.dp)){Text(v,Modifier.weight(1f),color=N);Icon(Icons.Default.KeyboardArrowDown,null,tint=M)};DropdownMenu(open,{open=false}){opts.forEach{DropdownMenuItem({Text(it)},{on(it);open=false})}}}}}
 
-@Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit,savePdf:()->Unit,share:()->Unit){
- var tab by remember{mutableStateOf(0)}
- Column(Modifier.fillMaxSize().padding(horizontal=18.dp).padding(top=8.dp)){
-  SegmentedTabs(listOf("Overview","Report","Analytical"),tab){tab=it}
-  Spacer(Modifier.height(12.dp))
-  when(tab){
-   0->LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(bottom=24.dp)){
-    item{OverviewPerformance(l,date)}
-    item{OverviewMetrics(l,date)}
-    item{OverviewDaily(l,date)}
-    item{GradButton("Open Report  →"){tab=1}}
-   }
-   1->Report(l,{tab=0},savePdf,share)
-   2->Analytical(l,date)
-  }
- }
-}
-
 @Composable fun SegmentedTabs(labels:List<String>,selected:Int,onSelected:(Int)->Unit){
  Surface(Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(18.dp),color=Color(0xFFEDEBFA)){
   Row(Modifier.fillMaxSize().padding(5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)){
