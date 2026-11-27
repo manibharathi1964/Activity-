@@ -74,7 +74,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Home(list:List<A>,date:String,filter:String,completionVersion:Int,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){val c=androidx.compose.ui.platform.LocalContext.current;val refresh=completionVersion;var pickDate by remember{mutableStateOf(false)}
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
- Scaffold(bottomBar={Nav(S.HOME,insights,settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+ Scaffold(bottomBar={Nav(S.HOME,{},{s= S.REPORT},settings)}){p->LazyColumn(Modifier.padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Header(settings)};item{Hero(d,list.size,pct)};item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
  Surface(Modifier.weight(1f).height(52.dp).clickable{pickDate=true},RoundedCornerShape(16.dp),color=C){
   Row(Modifier.fillMaxSize().padding(horizontal=14.dp),verticalAlignment=Alignment.CenterVertically){
@@ -175,7 +175,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
   }
  }
 }
-@Composable fun Nav(active:S,report:()->Unit,settings:()->Unit){Surface(color=C,shadowElevation=3.dp){Row(Modifier.fillMaxWidth().height(78.dp).padding(horizontal=70.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){NavItem(Icons.Default.Home,"Home",active==S.HOME){};NavItem(Icons.Default.Assessment,"Report",active==S.REPORT,report)}}}
+@Composable fun Nav(active:S,home:()->Unit,report:()->Unit,settings:()->Unit){Surface(color=C,shadowElevation=3.dp){Row(Modifier.fillMaxWidth().height(78.dp).padding(horizontal=70.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){NavItem(Icons.Default.Home,"Home",active==S.HOME,home);NavItem(Icons.Default.Assessment,"Report",active==S.REPORT,report)}}}
 @Composable fun NavItem(i:ImageVector,t:String,selected:Boolean,on:()->Unit){Column(Modifier.width(96.dp).clickable{on()},horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.width(76.dp).height(34.dp).clip(RoundedCornerShape(20.dp)).background(if(selected)Color(0xFFE8DEFF) else Color.Transparent),Alignment.Center){Icon(i,null,tint=if(selected)N else M,modifier=Modifier.size(25.dp))};Text(t,color=if(selected)N else M,fontSize=10.sp,fontWeight=FontWeight.Bold)}}
 
 @Composable fun Top(t:String,back:()->Unit){Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=N)};Text(t,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold)}}
@@ -347,7 +347,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  val range=remember(tab,customStart,customEnd){when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}}
  val stats=runCatching{rangeStats(l,range.first,range.second)}.getOrElse{Triple(0,0,0)}
  val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
- Scaffold(bottomBar={Nav(S.REPORT,back,settings)},containerColor=Color(0xFFF6F6FF)){p->
+ Scaffold(bottomBar={Nav(S.REPORT,back,{},{s= S.SETTINGS})},containerColor=Color(0xFFF6F6FF)){p->
   LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    item{Header(settings)}
    item{ReportSegmentedTabs(tab){selected->if(selected in 0..3)tab=selected}}
@@ -448,17 +448,19 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 }
 
 fun parseDay(s:String):Calendar=Calendar.getInstance().apply{
- time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(s)?:Date()
+ val format=SimpleDateFormat("yyyy-MM-dd",Locale.US).apply{isLenient=false}
+ time=runCatching{format.parse(s)}.getOrNull()?:Date()
  set(Calendar.HOUR_OF_DAY,0);set(Calendar.MINUTE,0);set(Calendar.SECOND,0);set(Calendar.MILLISECOND,0)
 }
 
 fun normalizeRange(start:String,end:String):Pair<String,String>{
- val s=runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(start)}.getOrNull()
- val e=runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(end)}.getOrNull()
+ val format=SimpleDateFormat("yyyy-MM-dd",Locale.US).apply{isLenient=false}
+ val s=runCatching{format.parse(start)}.getOrNull()
+ val e=runCatching{format.parse(end)}.getOrNull()
  if(s==null&&e==null)return Pair(today(),today())
  if(s==null)return Pair(end,end)
  if(e==null)return Pair(start,start)
- return if(start<=end)Pair(start,end) else Pair(end,start)
+ return if(s.time<=e.time)Pair(start,end) else Pair(end,start)
 }
 
 fun weekBounds():Pair<String,String>{
@@ -487,7 +489,7 @@ fun rangeDates(start:String,end:String):List<String>{
  val c=parseDay(safe.first)
  val e=parseDay(safe.second)
  var guard=0
- while(!c.after(e)&&guard<3661){
+ while(!c.after(e)&&guard<366){
   out.add(SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.time))
   c.add(Calendar.DAY_OF_MONTH,1)
   guard++
