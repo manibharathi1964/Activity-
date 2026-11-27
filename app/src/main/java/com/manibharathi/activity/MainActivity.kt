@@ -134,7 +134,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  }
 }
 @Composable fun InsightMini(i:ImageVector,v:String,l:String,c:Color){
- Surface(Modifier.weight(1f),shape=RoundedCornerShape(16.dp),color=Color(0xFFF7F6FF)){
+ Surface(Modifier.width(82.dp),shape=RoundedCornerShape(16.dp),color=Color(0xFFF7F6FF)){
   Column(Modifier.padding(vertical=10.dp,horizontal=7.dp),horizontalAlignment=Alignment.CenterHorizontally){
    Box(Modifier.size(34.dp).clip(CircleShape).background(c.copy(alpha=.12f)),Alignment.Center){Icon(i,null,tint=c,modifier=Modifier.size(20.dp))}
    Spacer(Modifier.height(4.dp));Text(v,color=N,fontSize=17.sp,fontWeight=FontWeight.Bold);Text(l,color=M,fontSize=8.sp,fontWeight=FontWeight.SemiBold)
@@ -179,7 +179,30 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun OverallCard(r:Int){Surface(shape=RoundedCornerShape(22.dp),color=C){Row(Modifier.fillMaxWidth().padding(18.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Overall Performance",color=N,fontSize=13.sp,fontWeight=FontWeight.Bold);Text(r.toString()+"%",color=N,fontSize=36.sp,fontWeight=FontWeight.Bold);Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.TrendingUp,null,tint=G,modifier=Modifier.size(16.dp));Text("5% improvement",color=G,fontSize=10.sp,fontWeight=FontWeight.Bold)}};Box(Modifier.size(102.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,Color(0xFF18D7BF),B,P))),Alignment.Center){Box(Modifier.size(76.dp).clip(CircleShape).background(C),Alignment.Center){Icon(Icons.Default.BarChart,null,tint=B,modifier=Modifier.size(40.dp))}}}}}
 @Composable fun StatsRow(l:List<A>,d:Int){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)){BM(l.size.toString(),"Total",O);BM(d.toString(),"Completed",G);BM((l.size-d).toString(),"Pending",B);BM(streak().toString(),"Streak",O)}}
 @Composable fun WeeklyBars(){Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(16.dp)){Text("Weekly Progress",color=N,fontWeight=FontWeight.Bold,fontSize=16.sp);Spacer(Modifier.height(14.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.Bottom){listOf(70,80,90,85,95,89,67).forEach{v->Column(Modifier.width(30.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v.toString()+"%",color=M,fontSize=8.sp);Spacer(Modifier.height(4.dp));Box(Modifier.width(24.dp).height((v*1.35f).dp).clip(RoundedCornerShape(8.dp)).background(Brush.verticalGradient(listOf(B,P))))}}};Spacer(Modifier.height(8.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun").forEach{Text(it,Modifier.width(30.dp),textAlign=TextAlign.Center,color=M,fontSize=8.sp,fontWeight=FontWeight.Bold)}}}}}
-@Composable fun Analytics(l:List<A>,date:String){val cats=l.groupingBy{it.cat}.eachCount();val total=maxOf(1,l.size);Surface(shape=RoundedCornerShape(22.dp),color=C){Column(Modifier.padding(18.dp)){Text("Category Analytics",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold);Text("Activity distribution by category",color=M,fontSize=10.sp);Spacer(Modifier.height(12.dp));cats.entries.forEach{e->Row(Modifier.padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){Text(e.key,Modifier.width(85.dp),color=N,fontSize=10.sp,fontWeight=FontWeight.Bold);Box(Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE9E7F5))){Box(Modifier.fillMaxWidth(e.value.toFloat()/total).fillMaxHeight().background(P))};Spacer(Modifier.width(8.dp));Text((e.value*100/total).toString()+"%",color=M,fontSize=9.sp)}}}}}}
+@Composable fun Analytics(l:List<A>,date:String){
+ val cats=l.groupingBy{it.cat}.eachCount();val total=maxOf(1,l.size)
+ Surface(shape=RoundedCornerShape(22.dp),color=C){
+  Column(Modifier.padding(18.dp)){
+   Text("Category Analytics",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold)
+   Text("Activity distribution by category",color=M,fontSize=10.sp)
+   Spacer(Modifier.height(12.dp))
+   cats.entries.forEach{e->
+    Row(Modifier.padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
+     Text(e.key,Modifier.width(85.dp),color=N,fontSize=10.sp,fontWeight=FontWeight.Bold)
+     Box(Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE9E7F5))){
+      Box(Modifier.fillMaxWidth(e.value.toFloat()/total).fillMaxHeight().background(P))
+     }
+     Spacer(Modifier.width(8.dp));Text((e.value*100/total).toString()+"%",color=M,fontSize=9.sp)
+    }
+   }
+  }
+ }
+}
+@Composable fun BM(v:String,l:String,c:Color){
+ Surface(Modifier.weight(1f),shape=RoundedCornerShape(17.dp),color=C){
+  Column(Modifier.padding(vertical=11.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontWeight=FontWeight.Bold,fontSize=18.sp);Text(l,color=M,fontSize=9.sp)}
+ }
+}
 @Composable
 fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  var shown by remember{mutableStateOf(java.util.Calendar.getInstance())}
