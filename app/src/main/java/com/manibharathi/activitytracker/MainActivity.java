@@ -5,6 +5,7 @@ import android.content.*;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.print.*;
 import android.view.*;
 import android.widget.*;
