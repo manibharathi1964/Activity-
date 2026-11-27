@@ -59,14 +59,14 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun App(){
  val c=androidx.compose.ui.platform.LocalContext.current
  var s by remember{mutableStateOf(S.SPLASH)};var date by remember{mutableStateOf(today())};var list by remember{mutableStateOf(load(c))}
- var edit by remember{mutableStateOf<A?>(null)};var filter by remember{mutableStateOf("All")};var pendingExport by remember{mutableStateOf<String?>(null)};var pendingPdf by remember{mutableStateOf<ByteArray?>(null)}
+ var edit by remember{mutableStateOf<A?>(null)};var filter by remember{mutableStateOf("All")};var completionVersion by remember{mutableIntStateOf(0)};var pendingExport by remember{mutableStateOf<String?>(null)};var pendingPdf by remember{mutableStateOf<ByteArray?>(null)}
  val saveFile=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")){u->if(u!=null)pendingExport?.let{c.contentResolver.openOutputStream(u)?.use{os->os.write(it.toByteArray())}}};val savePdf=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u->if(u!=null)pendingPdf?.let{c.contentResolver.openOutputStream(u)?.use{os->os.write(it)}}};val restore=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){u->if(u!=null){c.contentResolver.openInputStream(u)?.bufferedReader()?.use{br->restoreData(c,br.readText())};list=load(c)}}
  LaunchedEffect(Unit){Done.set.addAll(c.getSharedPreferences("activity",Context.MODE_PRIVATE).getStringSet("done",emptySet())?:emptySet());delay(1200);s=S.HOME}
  BackHandler(enabled=s != S.HOME){s=S.HOME}
  MaterialTheme(colorScheme=lightColorScheme()){Surface(Modifier.fillMaxSize(),color=Color(0xFFF6F6FF)){
   when(s){
    S.SPLASH->Splash()
-   S.HOME->Home(list,date,filter,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);list=list.toList()},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
+   S.HOME->Home(list,date,filter,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++ ;list=list.toList()},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
    S.INSIGHTS->Insights(list,date,{s=S.HOME},{s=S.REPORT},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
@@ -131,7 +131,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  val d=l.count{done(it.id,date)};val pending=l.size-d;val success=if(l.isEmpty())0 else d*100/l.size
  Surface(shape=RoundedCornerShape(24.dp),color=C){
   Column(Modifier.padding(16.dp)){
-   Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Quick Insights",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold);Text("Today's activity snapshot",color=M,fontSize=10.sp)};TextButton(go){Text("View report  →",color=P,fontSize=10.sp,fontWeight=FontWeight.Bold)}}
+   Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Quick Insights",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold);Text("Today's activity snapshot",color=M,fontSize=10.sp)};Button(go,Modifier.height(46.dp),shape=RoundedCornerShape(23.dp),colors=ButtonDefaults.buttonColors(containerColor=P),contentPadding=PaddingValues(horizontal=18.dp)){Text("View Report  →",color=C,fontSize=12.sp,fontWeight=FontWeight.Bold)}}
    Spacer(Modifier.height(12.dp))
    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
     InsightMini(Modifier.weight(1f),Icons.Default.EmojiEvents,l.size.toString(),"Total",O);InsightMini(Modifier.weight(1f),Icons.Default.CheckCircle,d.toString(),"Completed",G);InsightMini(Modifier.weight(1f),Icons.Default.Schedule,pending.toString(),"Pending",B);InsightMini(Modifier.weight(1f),Icons.Default.TrendingUp,success.toString()+"%","Success",P)
@@ -174,7 +174,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 
 @Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit,savePdf:()->Unit,share:()->Unit){
  var tab by remember{mutableStateOf(0)}
- Column(Modifier.fillMaxSize().padding(horizontal=18.dp)){
+ Column(Modifier.fillMaxSize().padding(horizontal=18.dp).padding(top=8.dp)){
   Top("Insights",back)
   SegmentedTabs(listOf("Overview","Report","Analytical"),tab){tab=it}
   Spacer(Modifier.height(12.dp))
@@ -495,7 +495,7 @@ fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
  }
 }
 
-@Composable fun Settings(back:()->Unit,export:()->Unit,restore:()->Unit,remind:()->Unit,cancel:()->Unit,notify:()->Unit,share:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Settings",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Setting(Icons.Default.Notifications,"Notifications","Enable daily reminder"){notify();remind()}};item{Setting(Icons.Default.Alarm,"Reminder Schedule","Choose daily reminder time"){remind()}};item{Setting(Icons.Default.NotificationsOff,"Cancel Reminder","Turn off scheduled reminder"){cancel()}};item{Setting(Icons.Default.Storage,"Data Management","Backup & Restore"){export()}};item{Setting(Icons.Default.Restore,"Restore Backup","Import Activity JSON"){restore()}};item{Setting(Icons.Default.Share,"Export Data","Share Your Data",share)};item{Setting(Icons.Default.Info,"About App","Version 1.0.0"){} };item{Setting(Icons.Default.Security,"Privacy Policy","Read Our Policy"){} };item{Setting(Icons.Default.Star,"Rate Us","Give 5 Stars"){} };item{OutlinedButton(reset,Modifier.fillMaxWidth().height(50.dp),shape=RoundedCornerShape(25.dp)){Text("Reset Completion History",color=Color(0xFFB63F55))}}}}}
+@Composable fun Settings(back:()->Unit,export:()->Unit,restore:()->Unit,remind:()->Unit,cancel:()->Unit,notify:()->Unit,share:()->Unit,reset:()->Unit){Column(Modifier.fillMaxSize().padding(18.dp)){Top("Settings",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Setting(Icons.Default.Notifications,"Notifications","Enable daily reminder"){notify();remind()}};item{Setting(Icons.Default.Alarm,"Reminder Schedule","Choose daily reminder time"){remind()}};item{Setting(Icons.Default.NotificationsOff,"Cancel Reminder","Turn off scheduled reminder"){cancel()}};item{Setting(Icons.Default.Storage,"Data Management","Backup & Restore"){export()}};item{Setting(Icons.Default.Restore,"Restore Backup","Import Activity JSON"){restore()}};item{Setting(Icons.Default.Share,"Export Data","Share Your Data",share)};item{Setting(Icons.Default.Info,"About App","Version 1.0.0"){} };item{OutlinedButton(reset,Modifier.fillMaxWidth().height(50.dp),shape=RoundedCornerShape(25.dp)){Text("Reset Completion History",color=Color(0xFFB63F55))}}}}}
 
 @Composable fun Setting(i:ImageVector,t:String,s:String,click:()->Unit){Surface(shape=RoundedCornerShape(18.dp),color=C){Row(Modifier.fillMaxWidth().clickable{click()}.padding(14.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFE9E4FF)),Alignment.Center){Icon(i,null,tint=P)};Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(t,color=N,fontWeight=FontWeight.Bold,fontSize=13.sp);Text(s,color=M,fontSize=10.sp)};Icon(Icons.Default.ChevronRight,null,tint=M)}}}
 
