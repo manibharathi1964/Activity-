@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,7 +46,7 @@ private val M=Color(0xFF68708E); private val G=Color(0xFF19B875); private val O=
 
 data class A(val id:Long,var name:String,var cat:String,var target:String,var freq:String)
 enum class S{HOME,ADD,INSIGHTS,CALENDAR,REPORT,SETTINGS}
-object Done{val set=mutableStateSetOf<String>()}
+object Done{val set=mutableSetOf<String>()}
 
 class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{App()}}}
 
