@@ -92,12 +92,48 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 }
 
 
-@Composable fun Hero(d:Int,total:Int,pct:Int){Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(Color(0xFF512DDB),Color(0xFF159AF2)))).padding(18.dp)){Column{
- Row{Text("TODAY  •  "+display(today()),color=Color(0xFFE5DEFF),fontSize=10.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text(pct.toString()+"%",color=C,fontSize=30.sp,fontWeight=FontWeight.Bold)}
- Text(if(pct==100&&total>0)"Day completed. Nice work!" else if(d>0)"Keep going! You're doing great!" else "Ready for a productive day?",color=C,fontSize=18.sp,fontWeight=FontWeight.Bold)
- Spacer(Modifier.height(8.dp));LinearProgressIndicator({pct/100f},Modifier.fillMaxWidth().height(7.dp),color=C,trackColor=C.copy(.25f));Spacer(Modifier.height(7.dp))
- Row{Text(d.toString()+" / "+total+" completed",color=C,fontSize=11.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text(streak().toString()+" day streak  ✦",color=C,fontSize=11.sp,fontWeight=FontWeight.Bold)}
-}}}
+@Composable fun Hero(d:Int,total:Int,pct:Int){
+ Box(
+  Modifier.fillMaxWidth()
+   .clip(RoundedCornerShape(28.dp))
+   .background(Brush.linearGradient(listOf(Color(0xFF4E2AD8),Color(0xFF159AF2))))
+   .padding(18.dp)
+ ){
+  Column(verticalArrangement=Arrangement.spacedBy(12.dp)){
+   Row(verticalAlignment=Alignment.CenterVertically){
+    Column(Modifier.weight(1f)){
+     Surface(shape=RoundedCornerShape(20.dp),color=C.copy(alpha=.16f)){
+      Text("TODAY  •  "+display(today()),color=Color(0xFFEDE8FF),fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=11.dp,vertical=7.dp))
+     }
+     Spacer(Modifier.height(9.dp))
+     Text(if(pct==100&&total>0)"Day completed. Nice work!" else if(d>0)"Keep going! You're doing great!" else "Ready for a productive day?",color=C,fontSize=17.sp,fontWeight=FontWeight.Bold)
+     Spacer(Modifier.height(4.dp))
+     Text("Your progress for today",color=Color(0xFFD9E8FF),fontSize=10.sp)
+    }
+    Box(Modifier.size(82.dp).clip(CircleShape).background(C.copy(alpha=.14f)),Alignment.Center){
+     Box(Modifier.size(68.dp).clip(CircleShape).background(C.copy(alpha=.95f)),Alignment.Center){
+      Text(pct.toString()+"%",color=P,fontSize=20.sp,fontWeight=FontWeight.Bold)
+     }
+    }
+   }
+   LinearProgressIndicator({pct/100f},Modifier.fillMaxWidth().height(8.dp),color=C,trackColor=C.copy(.22f))
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+    Surface(Modifier.weight(1f),shape=RoundedCornerShape(16.dp),color=C.copy(alpha=.13f)){
+     Row(Modifier.padding(horizontal=12.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
+      Icon(Icons.Default.CheckCircle,null,tint=C,modifier=Modifier.size(18.dp));Spacer(Modifier.width(7.dp))
+      Column{Text(d.toString()+" / "+total,color=C,fontSize=13.sp,fontWeight=FontWeight.Bold);Text("Completed",color=Color(0xFFD9E8FF),fontSize=8.sp)}
+     }
+    }
+    Surface(Modifier.weight(1f),shape=RoundedCornerShape(16.dp),color=C.copy(alpha=.13f)){
+     Row(Modifier.padding(horizontal=12.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
+      Icon(Icons.Default.LocalFireDepartment,null,tint=Color(0xFFFFD166),modifier=Modifier.size(18.dp));Spacer(Modifier.width(7.dp))
+      Column{Text(streak().toString()+" days",color=C,fontSize=13.sp,fontWeight=FontWeight.Bold);Text("Current streak",color=Color(0xFFD9E8FF),fontSize=8.sp)}
+     }
+    }
+   }
+  }
+ }
+}
 
 @Composable fun Pill(t:String,m:Modifier,on:()->Unit){Surface(m.height(50.dp).clickable{on()},RoundedCornerShape(16.dp),color=C){Box(Modifier.padding(horizontal=14.dp),Alignment.CenterStart){Text(t,color=N,fontSize=12.sp,fontWeight=FontWeight.SemiBold)}}}
 @Composable fun GradButton(t:String,on:()->Unit){Box(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).background(Brush.horizontalGradient(listOf(P,B))).clickable{on()},Alignment.Center){Text(t,color=C,fontWeight=FontWeight.Bold)}}
