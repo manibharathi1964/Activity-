@@ -204,11 +204,12 @@ public class MainActivity extends Activity {
 
     void loadHabits(){habits.clear();String raw=prefs.getString("habits","");if(raw.isEmpty()){habits.add(new Habit(1,"Morning Stretching & Yoga","Fitness","20 min","Daily"));habits.add(new Habit(2,"1 Hour Exercise / Gym","Fitness","60 min","Daily"));habits.add(new Habit(3,"10,000 Steps Walking","Health","10,000 steps","Daily"));habits.add(new Habit(4,"Drink 3 Litres Water","Health","3 litres","Daily"));habits.add(new Habit(5,"Face Care & Sunscreen Routine","Personal","Morning + evening","Daily"));habits.add(new Habit(6,"Healthy Nutrition","Health","Balanced meals","Daily"));saveHabits();return;}try{JSONArray a=new JSONArray(raw);for(int i=0;i<a.length();i++){JSONObject o=a.getJSONObject(i);habits.add(new Habit(o.getLong("id"),o.getString("name"),o.getString("category"),o.optString("target",""),o.optString("frequency","Daily")));}}catch(Exception ignored){}}
     void saveHabits(){try{JSONArray a=new JSONArray();for(Habit h:habits){JSONObject o=new JSONObject();o.put("id",h.id);o.put("name",h.name);o.put("category",h.category);o.put("target",h.target);o.put("frequency",h.frequency);a.put(o);}prefs.edit().putString("habits",a.toString()).apply();}catch(Exception ignored){}}
-}
-    void printReport(){
+}    void printReport(){
         PrintManager pm=(PrintManager)getSystemService(PRINT_SERVICE);
         pm.print("Activity Report",new PrintDocumentAdapter(){
             public void onLayout(PrintAttributes a,PrintAttributes b,android.os.CancellationSignal c,LayoutResultCallback cb,Bundle e){cb.onLayoutFinished(new PrintDocumentInfo.Builder("activity-report.pdf").setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT).build(),true);}
             public void onWrite(PageRange[] p,android.os.ParcelFileDescriptor dest,android.os.CancellationSignal c,WriteResultCallback cb){try{java.io.FileOutputStream out=new java.io.FileOutputStream(dest.getFileDescriptor());StringBuilder s=new StringBuilder("ACTIVITY\nPerformance Report\n\n");for(Habit h:habits)s.append(h.name).append(" — ").append(isDone(h.id,today())?"Completed":"Pending").append("\n");out.write(s.toString().getBytes());out.flush();cb.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});}catch(Exception e){cb.onWriteFailed(e.toString());}}
         },null);
     }
+
+}
