@@ -68,7 +68,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
    S.SPLASH->Splash()
    S.HOME->Home(list,date,filter,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);list=list.toList()},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
-   S.INSIGHTS->Insights(list,date,{s=S.HOME},{s=S.REPORT})
+   S.INSIGHTS->Insights(list,date,{s=S.HOME},{s=S.REPORT},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
    S.REPORT->Report(list,{s=S.INSIGHTS},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
    S.SETTINGS->Settings({s=S.HOME},{pendingExport=backupData(c,list);saveFile.launch("Activity-Backup.json")},{restore.launch(arrayOf("application/json"))},{scheduleReminder(c,c.getSharedPreferences("activity",Context.MODE_PRIVATE).getInt("reminderHour",8),c.getSharedPreferences("activity",Context.MODE_PRIVATE).getInt("reminderMinute",0))},{cancelReminder(c)},{requestNotification(c)},{share(c,report(list))},{Done.set.clear();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().remove("done").apply()})
@@ -170,13 +170,13 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Field(l:String,v:String,h:String,on:(String)->Unit){Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);OutlinedTextField(v,on,Modifier.fillMaxWidth(),placeholder={Text(h,color=M,fontSize=12.sp)},singleLine=true,shape=RoundedCornerShape(14.dp))}}
 @Composable fun Select(l:String,v:String,opts:List<String>,on:(String)->Unit){var open by remember{mutableStateOf(false)};Column{Text(l,color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Box{OutlinedButton({open=true},Modifier.fillMaxWidth().height(52.dp),shape=RoundedCornerShape(14.dp)){Text(v,Modifier.weight(1f),color=N);Icon(Icons.Default.KeyboardArrowDown,null,tint=M)};DropdownMenu(open,{open=false}){opts.forEach{DropdownMenuItem({Text(it)},{on(it);open=false})}}}}}
 
-@Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit){
+@Composable fun Insights(l:List<A>,date:String,back:()->Unit,reportGo:()->Unit,savePdf:()->Unit,share:()->Unit){
  var tab by remember{mutableStateOf(0)};val d=l.count{done(it.id,date)};val r=if(l.isEmpty())0 else d*100/l.size
  Column(Modifier.fillMaxSize().padding(18.dp)){Top("Insights",back)
   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){listOf("Overview","Reports","Analytics").forEachIndexed{i,t->Text(t,Modifier.clickable{tab=i}.padding(horizontal=12.dp,vertical=10.dp),color=if(i==tab)P else M,fontSize=11.sp,fontWeight=FontWeight.Bold,textAlign=TextAlign.Center)}}
   when(tab){
    0->LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp)){item{OverallCard(r)};item{StatsRow(l,d)};item{WeeklyBars()};item{GradButton("Open Reports  →",reportGo)}}
-   1->Report(l,{tab=0},{},{})
+   1->Report(l,{tab=0},savePdf,share)
    2->Analytics(l,date)
   }
  }
