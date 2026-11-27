@@ -270,6 +270,8 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
    item{if(tab==2)Surface(Modifier.clickable{pickingStart=true},shape=RoundedCornerShape(18.dp),color=C){Row(Modifier.padding(15.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DateRange,null,tint=P);Spacer(Modifier.width(10.dp));Text("Custom date range",color=N,fontSize=12.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text("Select",color=P,fontWeight=FontWeight.Bold)}} else Spacer(Modifier.height(1.dp))}
    item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){Button(savePdf,Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save PDF")};OutlinedButton(share,Modifier.weight(1f)){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}}}
   }
+  if(pickingStart) NativeDatePicker(c,customStart){customStart=it;pickingStart=false;pickingEnd=true}
+  if(pickingEnd) NativeDatePicker(c,customEnd){customEnd=it;pickingEnd=false}
  }
 }
 @Composable fun NativeDatePicker(c:Context,initial:String,onDone:(String)->Unit){LaunchedEffect(Unit){val cal=Calendar.getInstance();runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(initial)!!};android.app.DatePickerDialog(c,{_,y,m,d->onDone(String.format(Locale.US,"%04d-%02d-%02d",y,m+1,d))},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH)).show()}}
