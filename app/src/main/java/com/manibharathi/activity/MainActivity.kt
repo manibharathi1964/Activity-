@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
@@ -20,6 +21,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,6 +58,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  var dark by remember{mutableStateOf(c.getSharedPreferences("activity",Context.MODE_PRIVATE).getBoolean("dark",false))};var edit by remember{mutableStateOf<A?>(null)};var filter by remember{mutableStateOf("All")};var pendingExport by remember{mutableStateOf<String?>(null)};var pendingPdf by remember{mutableStateOf<ByteArray?>(null)}
  val saveFile=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")){u->if(u!=null)pendingExport?.let{c.contentResolver.openOutputStream(u)?.use{os->os.write(it.toByteArray())}}};val savePdf=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u->if(u!=null)pendingPdf?.let{c.contentResolver.openOutputStream(u)?.use{os->os.write(it)}}};val restore=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){u->if(u!=null){c.contentResolver.openInputStream(u)?.bufferedReader()?.use{br->restoreData(c,br.readText())};list=load(c)}}
  LaunchedEffect(Unit){Done.set.addAll(c.getSharedPreferences("activity",Context.MODE_PRIVATE).getStringSet("done",emptySet())?:emptySet())}
+ BackHandler(enabled=s != S.HOME){s=S.HOME}
  MaterialTheme(colorScheme=if(dark)darkColorScheme() else lightColorScheme()){Surface(Modifier.fillMaxSize(),color=if(dark)Color(0xFF0D1022) else Color(0xFFF6F6FF)){
   when(s){
    S.HOME->Home(list,date,filter,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);list=list.toList()},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
@@ -68,7 +71,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  }}
 }
 
-@Composable fun Header(settings:()->Unit){Row(Modifier.fillMaxWidth().height(64.dp),verticalAlignment=Alignment.CenterVertically){Icon(painterResource(R.drawable.activity_logo),null,Modifier.size(48.dp));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text("Activity",color=P,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Plan • Track • Achieve",color=M,fontSize=11.sp)};IconButton(settings){Icon(Icons.Default.MoreVert,null,tint=P)}}}
+@Composable fun Header(settings:()->Unit){Row(Modifier.fillMaxWidth().height(64.dp),verticalAlignment=Alignment.CenterVertically){Image(painterResource(R.drawable.activity_logo),contentDescription="Activity",Modifier.size(48.dp));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text("Activity",color=P,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("Plan • Track • Achieve",color=M,fontSize=11.sp)};IconButton(settings){Icon(Icons.Default.MoreVert,null,tint=P)}}}
 
 @Composable fun Home(list:List<A>,date:String,filter:String,setDate:(String)->Unit,setFilter:(String)->Unit,add:()->Unit,toggle:(Long)->Unit,edit:(A)->Unit,insights:()->Unit,settings:()->Unit){
  val d=list.count{done(it.id,date)};val pct=if(list.isEmpty())0 else d*100/list.size;val shown=list.filter{filter=="All"||(filter=="Completed"&&done(it.id,date))||(filter=="Pending"&&!done(it.id,date))}
@@ -98,7 +101,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Quick(l:List<A>,date:String,go:()->Unit){val d=l.count{done(it.id,date)};Surface(shape=RoundedCornerShape(24.dp),color=C){Column(Modifier.padding(16.dp)){Row{Text("Quick Insights",color=N,fontSize=17.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(go){Text("View report  →",color=P,fontSize=10.sp)}};Row{Metric(l.size.toString(),"Total",P);Metric(d.toString(),"Completed",G);Metric((l.size-d).toString(),"Pending",O);Metric((if(l.isEmpty())0 else d*100/l.size).toString()+"%","Success",P)}}}}
 @Composable fun Metric(v:String,l:String,c:Color){Column(Modifier.width(75.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontSize=18.sp,fontWeight=FontWeight.Bold);Text(l,color=M,fontSize=9.sp)}}
 
-@Composable fun Nav(active:S,insights:()->Unit,settings:()->Unit){NavigationBar(containerColor=C){NavigationBarItem(active==S.HOME,{},{Icon(Icons.Default.Home,null)},label={Text("Home",fontSize=10.sp)});NavigationBarItem(active==S.INSIGHTS,insights,{Icon(Icons.Default.BarChart,null)},label={Text("Insights",fontSize=10.sp)});NavigationBarItem(active==S.SETTINGS,settings,{Icon(Icons.Default.Settings,null)},label={Text("Settings",fontSize=10.sp)})}}
+@Composable fun Nav(active:S,insights:()->Unit,settings:()->Unit){NavigationBar(containerColor=C){NavigationBarItem(active==S.HOME,{}, {Icon(Icons.Default.Home,null)},label={Text("Home",fontSize=10.sp)});NavigationBarItem(active==S.INSIGHTS,insights,{Icon(Icons.Default.BarChart,null)},label={Text("Insights",fontSize=10.sp)})}}
 
 @Composable fun Top(t:String,back:()->Unit){Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=N)};Text(t,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold)}}
 @Composable fun Add(edit:A?,back:()->Unit,save:(A)->Unit){var name by remember{mutableStateOf(edit?.name?:"")};var cat by remember{mutableStateOf(edit?.cat?:"Fitness")};var target by remember{mutableStateOf(edit?.target?:"")};var freq by remember{mutableStateOf(edit?.freq?:"Daily")};Column(Modifier.fillMaxSize().padding(18.dp)){Top(if(edit==null)"Add Activity" else "Edit Activity",back);LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)){item{Box(Modifier.fillMaxWidth(),Alignment.Center){Box(Modifier.size(86.dp).clip(CircleShape).background(Color(0xFFDDF7F5)),Alignment.Center){Icon(Icons.Default.DirectionsRun,null,tint=Color(0xFF124E68),modifier=Modifier.size(48.dp))}}};item{Field("Activity Name *",name,"e.g. Morning Exercise"){name=it}};item{Select("Category",cat,listOf("Fitness","Health","Personal","Study","Work","Finance","Other")){cat=it}};item{Select("Input Type","Checkbox",listOf("Checkbox","Duration","Number","Text")){}};item{Field("Target / Goal",target,"e.g. 30 min"){target=it}};item{Select("Frequency",freq,listOf("Daily","Weekly","Custom")){freq=it}};item{Field("Start Date",today(),"Nov 26, 2025"){} };item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Reminder",color=N,fontWeight=FontWeight.Bold,fontSize=13.sp);Text("Daily reminder time",color=M,fontSize=10.sp)};Text("8:00 AM",color=N,fontWeight=FontWeight.Bold);Switch(true,{})}};item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){OutlinedButton(back,Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp)){Text("Cancel",color=P)};Button({if(name.isNotBlank())save(A(edit?.id?:System.currentTimeMillis(),name,cat,target,freq))},Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(26.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Text("Save")}}}}}}
