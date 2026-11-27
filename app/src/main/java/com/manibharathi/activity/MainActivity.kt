@@ -44,7 +44,7 @@ private val P=Color(0xFF643AF2); private val B=Color(0xFF159AF2); private val N=
 private val M=Color(0xFF68708E); private val G=Color(0xFF19B875); private val O=Color(0xFFF08B37); private val C=Color.White
 
 data class A(val id:Long,var name:String,var cat:String,var target:String,var freq:String)
-enum class S{HOME,ADD,INSIGHTS,CALENDAR,REPORT,SETTINGS,SPLASH}
+enum class S{HOME,ADD,CALENDAR,REPORT,SETTINGS,SPLASH}
 object Done{val set=mutableSetOf<String>()}
 
 class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{App()}}}
@@ -59,11 +59,10 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  MaterialTheme(colorScheme=lightColorScheme()){Surface(Modifier.fillMaxSize(),color=Color(0xFFF6F6FF)){
   when(s){
    S.SPLASH->Splash()
-   S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{s=S.INSIGHTS},{s=S.SETTINGS})
+   S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{s=S.REPORT},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
-   S.INSIGHTS->Insights(list,date,{s=S.HOME},{s=S.REPORT},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
-   S.REPORT->Report(list,{s=S.INSIGHTS},{pendingPdf=buildPdf(list);savePdf.launch("Activity-Report.pdf")},{share(c,report(list))})
+   S.REPORT->Report(list,{s=S.HOME},{start,end->pendingPdf=buildPdf(list,start,end);savePdf.launch("Activity-Report.pdf")},{text->share(c,text)})
    S.SETTINGS->Settings({s=S.HOME},{pendingExport=backupData(c,list);saveFile.launch("Activity-Backup.json")},{restore.launch(arrayOf("application/json"))},{share(c,report(list))},{Done.set.clear();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().remove("done").apply()})
   }
  }}
@@ -87,7 +86,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  }
 }};item{GradButton("＋  Add Activity",add)}
   item{Text("Today",color=N,fontSize=21.sp,fontWeight=FontWeight.Bold);Text(list.size.toString()+" activities  •  "+d+" completed",color=M,fontSize=12.sp)}
-  items(shown){x->CardA(x,date,toggle,edit)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
+  items(shown){x->CardA(x,date,done(x.id,date),toggle,edit)};if(shown.isEmpty())item{Empty(add)};item{Quick(list,date,insights)}
  }}
  if(pickDate) NativeDatePicker(c,date){selected->setDate(selected);pickDate=false}
 }
@@ -103,8 +102,8 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
 @Composable fun Pill(t:String,m:Modifier,on:()->Unit){Surface(m.height(50.dp).clickable{on()},RoundedCornerShape(16.dp),color=C){Box(Modifier.padding(horizontal=14.dp),Alignment.CenterStart){Text(t,color=N,fontSize=12.sp,fontWeight=FontWeight.SemiBold)}}}
 @Composable fun GradButton(t:String,on:()->Unit){Box(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).background(Brush.horizontalGradient(listOf(P,B))).clickable{on()},Alignment.Center){Text(t,color=C,fontWeight=FontWeight.Bold)}}
 
-@Composable fun CardA(x:A,date:String,toggle:(Long)->Unit,edit:(A)->Unit){
- val d=done(x.id,date)
+@Composable fun CardA(x:A,date:String,isDone:Boolean,toggle:(Long)->Unit,edit:(A)->Unit){
+ val d=isDone
  Surface(shape=RoundedCornerShape(20.dp),color=C,shadowElevation=2.dp){
   Row(Modifier.fillMaxWidth().clickable{toggle(x.id)}.padding(12.dp),verticalAlignment=Alignment.CenterVertically){
    Cat(x.cat);Spacer(Modifier.width(11.dp))
@@ -140,7 +139,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
   }
  }
 }
-@Composable fun Nav(active:S,insights:()->Unit,settings:()->Unit){Surface(color=C,shadowElevation=3.dp){Row(Modifier.fillMaxWidth().height(78.dp).padding(horizontal=70.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){NavItem(Icons.Default.Home,"Home",active==S.HOME){};NavItem(Icons.Default.BarChart,"Insights",active==S.INSIGHTS,insights)}}}
+@Composable fun Nav(active:S,report:()->Unit,settings:()->Unit){Surface(color=C,shadowElevation=3.dp){Row(Modifier.fillMaxWidth().height(78.dp).padding(horizontal=70.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){NavItem(Icons.Default.Home,"Home",active==S.HOME){};NavItem(Icons.Default.Assessment,"Report",active==S.REPORT,report)}}}
 @Composable fun NavItem(i:ImageVector,t:String,selected:Boolean,on:()->Unit){Column(Modifier.width(96.dp).clickable{on()},horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.width(76.dp).height(34.dp).clip(RoundedCornerShape(20.dp)).background(if(selected)Color(0xFFE8DEFF) else Color.Transparent),Alignment.Center){Icon(i,null,tint=if(selected)N else M,modifier=Modifier.size(25.dp))};Text(t,color=if(selected)N else M,fontSize=10.sp,fontWeight=FontWeight.Bold)}}
 
 @Composable fun Top(t:String,back:()->Unit){Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=N)};Text(t,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold)}}
@@ -320,25 +319,41 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  }
 }
 
-@Composable fun Report(l:List<A>,back:()->Unit,savePdf:()->Unit,share:()->Unit){
+@Composable fun Report(l:List<A>,back:()->Unit,savePdf:(String,String)->Unit,share:(String)->Unit){
  val c=androidx.compose.ui.platform.LocalContext.current
  var tab by remember{mutableStateOf(0)}
  var customStart by remember{mutableStateOf(today())}
  var customEnd by remember{mutableStateOf(today())}
  var pickingStart by remember{mutableStateOf(false)}
  var pickingEnd by remember{mutableStateOf(false)}
- val range=when(tab){0->weekBounds();1->monthBounds();else->normalizeRange(customStart,customEnd)}
+ var generatedAt by remember{mutableStateOf("")}
+ val range=when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}
  val stats=rangeStats(l,range.first,range.second)
  Column(Modifier.fillMaxSize().padding(horizontal=18.dp)){
   Top("Report",back)
   ReportSegmentedTabs(tab){tab=it}
-  Spacer(Modifier.height(12.dp))
+  Spacer(Modifier.height(10.dp))
   LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(bottom=24.dp)){
+   item{
+    if(tab==3){
+     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+      DateRangeButton("Start",customStart,Modifier.weight(1f)){pickingStart=true}
+      DateRangeButton("End",customEnd,Modifier.weight(1f)){pickingEnd=true}
+     }
+    }
+   }
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
      Column(Modifier.padding(18.dp)){
-      Text(if(tab==0)"Weekly Report" else if(tab==1)"Monthly Report" else "Custom Report",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold)
-      Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
+      Row(verticalAlignment=Alignment.CenterVertically){
+       Column(Modifier.weight(1f)){
+        Text(if(tab==0)"Today's Report" else if(tab==1)"Weekly Report" else if(tab==2)"Monthly Report" else "Custom Report",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold)
+        Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
+       }
+       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){
+        Text(if(generatedAt.isBlank())"Not generated" else "Generated",color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))
+       }
+      }
       Spacer(Modifier.height(14.dp))
       Row(verticalAlignment=Alignment.CenterVertically){
        Box(Modifier.size(92.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(B,Color(0xFF18D7BF),P))),Alignment.Center){
@@ -354,24 +369,20 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
         Text("🔥 Streak  "+streak()+" Days",color=O,fontSize=10.sp)
        }
       }
+      Spacer(Modifier.height(14.dp))
+      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){
+       Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate Report",fontWeight=FontWeight.Bold)
+      }
      }
     }
    }
    item{DailyChart(l,range.first,range.second)}
-   if(tab==2){
-    item{
-     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-      DateRangeButton("Start",customStart,Modifier.weight(1f)){pickingStart=true}
-      DateRangeButton("End",customEnd,Modifier.weight(1f)){pickingEnd=true}
-     }
-    }
-   }
    item{
     Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
-     Button(savePdf,Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){
-      Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save PDF")
+     Button({savePdf(range.first,range.second)},Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){
+      Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save Report")
      }
-     OutlinedButton(share,Modifier.weight(1f)){
+     OutlinedButton({share(report(l,range.first,range.second))},Modifier.weight(1f)){
       Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")
      }
     }
@@ -383,7 +394,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
 }
 
 @Composable fun ReportSegmentedTabs(selected:Int,onSelected:(Int)->Unit){
- SegmentedTabs(listOf("Weekly","Monthly","Custom"),selected,onSelected)
+ SegmentedTabs(listOf("Today","Weekly","Monthly","Custom"),selected,onSelected)
 }
 
 @Composable fun DateRangeButton(label:String,value:String,modifier:Modifier,onClick:()->Unit){
@@ -490,14 +501,14 @@ fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
 
 fun backupData(c:Context,l:List<A>):String{val o=JSONObject();val a=JSONArray();l.forEach{val x=JSONObject();x.put("id",it.id);x.put("name",it.name);x.put("category",it.cat);x.put("target",it.target);x.put("frequency",it.freq);a.put(x)};o.put("activities",a);o.put("done",JSONArray(Done.set.toList()));return o.toString(2)}
 fun restoreData(c:Context,text:String){runCatching{val o=JSONObject(text);val a=o.optJSONArray("activities")?:JSONArray();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putString("items",a.toString()).apply();val d=o.optJSONArray("done");val set=mutableSetOf<String>();if(d!=null)for(i in 0 until d.length())set.add(d.getString(i));Done.set.clear();Done.set.addAll(set);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putStringSet("done",set).apply()}}
-fun buildPdf(l:List<A>):ByteArray{
+fun buildPdf(l:List<A>,start:String=today(),end:String=today()):ByteArray{
  val doc=PdfDocument();val pageW=595;val pageH=842;var pageNo=1;var page=doc.startPage(PdfDocument.PageInfo.Builder(pageW,pageH,pageNo).create());val canvas=page.canvas
  val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);p.color=android.graphics.Color.rgb(100,58,242);p.textSize=26f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD
  canvas.drawRect(0f,0f,pageW.toFloat(),92f,p);p.color=android.graphics.Color.WHITE;canvas.drawText("Activity",42f,42f,p);p.textSize=13f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Plan • Track • Achieve",42f,66f,p)
  p.color=android.graphics.Color.rgb(18,22,58);p.textSize=20f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Activity Performance Report",42f,132f,p)
- p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Generated: "+display(today()),42f,153f,p)
- val completed=l.count{done(it.id,today())};val pct=if(l.isEmpty())0 else completed*100/l.size
- p.textSize=12f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Overall Performance",42f,198f,p);p.textSize=30f;canvas.drawText(pct.toString()+"%",42f,232f,p);p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText(completed.toString()+" completed  •  "+(l.size-completed)+" pending  •  "+streak()+" day streak",42f,253f,p)
+ p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Range: "+formatRange(start,end),42f,153f,p)
+ val rangeDatesForPdf=rangeDates(start,end);val completed=rangeDatesForPdf.sumOf{d->l.count{done(it.id,d)}};val possible=l.size*rangeDatesForPdf.size;val pct=if(possible==0)0 else completed*100/possible
+ p.textSize=12f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Overall Performance",42f,198f,p);p.textSize=30f;canvas.drawText(pct.toString()+"%",42f,232f,p);p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText(completed.toString()+" completed  •  "+(possible-completed)+" pending  •  "+streak()+" day streak",42f,253f,p)
  p.color=android.graphics.Color.rgb(230,228,245);canvas.drawRoundRect(42f,270f,553f,278f,4f,4f,p);p.color=android.graphics.Color.rgb(100,58,242);canvas.drawRoundRect(42f,270f,42f+511f*(pct/100f),278f,4f,4f,p)
  p.color=android.graphics.Color.rgb(18,22,58);p.textSize=16f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Activities",42f,320f,p);p.textSize=10f;p.typeface=android.graphics.Typeface.DEFAULT
  var y=350f
@@ -518,5 +529,11 @@ fun today()=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(Date())
 fun display(s:String)=runCatching{SimpleDateFormat("EEE, MMM d",Locale.US).format(SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(s)!!)}.getOrDefault(s)
 fun load(c:Context):List<A>{val raw=c.getSharedPreferences("activity",Context.MODE_PRIVATE).getString("items",null)?:return listOf(A(1,"Morning Exercise","Fitness","30 min","Daily"),A(2,"Drink 3 Litres Water","Health","3 L","Daily"),A(3,"10000 Steps Walking","Health","10,000 steps","Daily"),A(4,"Healthy Nutrition","Health","5 servings","Daily"),A(5,"Face Care & Sunscreen","Personal","Daily","Daily"));return runCatching{val a=JSONArray(raw);(0 until a.length()).map{val o=a.getJSONObject(it);A(o.getLong("id"),o.getString("name"),o.getString("category"),o.optString("target"),o.optString("frequency","Daily"))}}.getOrDefault(emptyList())}
 fun save(c:Context,l:List<A>){val a=JSONArray();l.forEach{val o=JSONObject();o.put("id",it.id);o.put("name",it.name);o.put("category",it.cat);o.put("target",it.target);o.put("frequency",it.freq);a.put(o)};c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putString("items",a.toString()).apply()}
-fun report(l:List<A>)="ACTIVITY REPORT\n\n"+l.joinToString("\n"){it.name+" — "+if(done(it.id,today()))"Completed" else "Pending"}
+fun report(l:List<A>,start:String=today(),end:String=today()):String{
+ val dates=rangeDates(start,end)
+ return "ACTIVITY REPORT\n"+formatRange(start,end)+"\n\n"+l.joinToString("\n"){a->
+  val completed=dates.count{d->done(a.id,d)}
+  a.name+" — "+if(completed>0)"Completed on "+completed+" day(s)" else "Pending"
+ }
+}
 fun share(c:Context,t:String){c.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply{type="text/plain";putExtra(Intent.EXTRA_TEXT,t)},"Activity"))}
