@@ -1,4 +1,4 @@
-name: Build Activity Tracker APK
+name: Build Activity APK
 on:
   push:
     branches: [ main ]
