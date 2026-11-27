@@ -344,11 +344,11 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  var customEnd by remember{mutableStateOf(today())}
  var pickingStart by remember{mutableStateOf(false)}
  var pickingEnd by remember{mutableStateOf(false)}
- var generatedAt by remember{mutableStateOf("")}
+ var generatedAt by remember{mutableStateOf("")};var generatedReport by remember{mutableStateOf("")}
  val range=when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}
  val stats=rangeStats(l,range.first,range.second)
  val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
- Scaffold(bottomBar={Nav(S.REPORT,{},{settings})},containerColor=Color(0xFFF6F6FF)){p->
+ Scaffold(bottomBar={Nav(S.REPORT,back,settings)},containerColor=Color(0xFFF6F6FF)){p->
   LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    item{Header(settings)}
    item{ReportSegmentedTabs(tab){tab=it}}
@@ -369,11 +369,11 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
        Column{Text("Overall Performance",color=M,fontSize=10.sp);Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=18.sp);Text("✓ "+stats.first+" completed of "+stats.second,color=G,fontSize=10.sp);Text("🔥 "+streak()+" day streak",color=O,fontSize=10.sp)}
       }
       Spacer(Modifier.height(14.dp))
-      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
+      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date());generatedReport=report(l,range.first,range.second)},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
      }
     }
    }
-   item{DailyChart(l,range.first,range.second)}
+   item{if(generatedReport.isNotBlank()){Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=Color(0xFFF7F6FF)){Column(Modifier.padding(16.dp)){Text("Generated Report",color=N,fontSize=16.sp,fontWeight=FontWeight.Bold);Text("Generated at "+generatedAt,color=M,fontSize=9.sp);Spacer(Modifier.height(8.dp));Text(generatedReport,color=N,fontSize=10.sp,lineHeight=16.sp)}}}}\n   item{DailyChart(l,range.first,range.second)}
    item{
     Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
      Column(Modifier.padding(16.dp)){
