@@ -62,7 +62,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
    S.HOME->Home(list,date,filter,completionVersion,{date=it},{filter=it},{edit=null;s=S.ADD},{id->toggle(c,id,date);completionVersion++},{edit=it;s=S.ADD},{s=S.REPORT},{s=S.SETTINGS})
    S.ADD->Add(c,edit,{s=S.HOME}){x->list=if(edit==null)list+x else list.map{if(it.id==x.id)x else it};save(c,list);s=S.HOME}
    S.CALENDAR->Calendar(list,date,{s=S.HOME}){date=it;s=S.HOME}
-   S.REPORT->Report(list,{s=S.HOME},{start,end->pendingPdf=buildPdf(list,start,end);savePdf.launch("Activity-Report.pdf")},{text->share(c,text)})
+   S.REPORT->Report(list,{s=S.HOME},{s=S.SETTINGS},{start,end->pendingPdf=buildPdf(list,start,end);savePdf.launch("Activity-Report.pdf")},{text->share(c,text)})
    S.SETTINGS->Settings({s=S.HOME},{pendingExport=backupData(c,list);saveFile.launch("Activity-Backup.json")},{restore.launch(arrayOf("application/json"))},{share(c,report(list))},{Done.set.clear();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().remove("done").apply()})
   }
  }}
@@ -337,7 +337,7 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  }
 }
 
-@Composable fun Report(l:List<A>,back:()->Unit,savePdf:(String,String)->Unit,share:(String)->Unit){
+@Composable fun Report(l:List<A>,back:()->Unit,settings:()->Unit,savePdf:(String,String)->Unit,share:(String)->Unit){
  val c=androidx.compose.ui.platform.LocalContext.current
  var tab by remember{mutableStateOf(0)}
  var customStart by remember{mutableStateOf(today())}
@@ -347,62 +347,45 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
  var generatedAt by remember{mutableStateOf("")}
  val range=when(tab){0->Pair(today(),today());1->weekBounds();2->monthBounds();else->normalizeRange(customStart,customEnd)}
  val stats=rangeStats(l,range.first,range.second)
- Column(Modifier.fillMaxSize().padding(horizontal=18.dp)){
-  Top("Report",back)
-  ReportSegmentedTabs(tab){tab=it}
-  Spacer(Modifier.height(10.dp))
-  LazyColumn(verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(bottom=24.dp)){
+ val title=when(tab){0->"Today Report";1->"Weekly Report";2->"Monthly Report";else->"Custom Report"}
+ Scaffold(bottomBar={Nav(S.REPORT,{},{settings})},containerColor=Color(0xFFF6F6FF)){p->
+  LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=18.dp),contentPadding=PaddingValues(top=14.dp,bottom=28.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+   item{Header(settings)}
+   item{ReportSegmentedTabs(tab){tab=it}}
+   item{if(tab==3){Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){DateRangeButton("Start Date",customStart,Modifier.weight(1f)){pickingStart=true};DateRangeButton("End Date",customEnd,Modifier.weight(1f)){pickingEnd=true}}}}
    item{
-    if(tab==3){
-     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-      DateRangeButton("Start",customStart,Modifier.weight(1f)){pickingStart=true}
-      DateRangeButton("End",customEnd,Modifier.weight(1f)){pickingEnd=true}
-     }
-    }
-   }
-   item{
-    Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+    Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=C,shadowElevation=2.dp){
      Column(Modifier.padding(18.dp)){
       Row(verticalAlignment=Alignment.CenterVertically){
-       Column(Modifier.weight(1f)){
-        Text(if(tab==0)"Today's Report" else if(tab==1)"Weekly Report" else if(tab==2)"Monthly Report" else "Custom Report",color=N,fontSize=18.sp,fontWeight=FontWeight.Bold)
-        Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)
-       }
-       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){
-        Text(if(generatedAt.isBlank())"Not generated" else "Generated",color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))
-       }
+       Column(Modifier.weight(1f)){Text(title,color=N,fontSize=20.sp,fontWeight=FontWeight.Bold);Text(formatRange(range.first,range.second),color=M,fontSize=10.sp)}
+       Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFE9E4FF)){Text(if(generatedAt.isBlank())"Ready" else "Generated "+generatedAt,color=P,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(horizontal=10.dp,vertical=7.dp))}
       }
-      Spacer(Modifier.height(14.dp))
+      Spacer(Modifier.height(16.dp))
       Row(verticalAlignment=Alignment.CenterVertically){
-       Box(Modifier.size(92.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(B,Color(0xFF18D7BF),P))),Alignment.Center){
-        Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){
-         Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)
-        }
+       Box(Modifier.size(94.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(P,B,Color(0xFF18D7BF),P))),Alignment.Center){
+        Box(Modifier.size(72.dp).clip(CircleShape).background(C),Alignment.Center){Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=20.sp)}
        }
        Spacer(Modifier.width(16.dp))
-       Column{
-        Text("Performance",color=M,fontSize=10.sp)
-        Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=17.sp)
-        Text("✓ Completed  "+stats.first+" / "+stats.second,color=G,fontSize=10.sp)
-        Text("🔥 Streak  "+streak()+" Days",color=O,fontSize=10.sp)
-       }
+       Column{Text("Overall Performance",color=M,fontSize=10.sp);Text(stats.third.toString()+"%",color=N,fontWeight=FontWeight.Bold,fontSize=18.sp);Text("✓ "+stats.first+" completed of "+stats.second,color=G,fontSize=10.sp);Text("🔥 "+streak()+" day streak",color=O,fontSize=10.sp)}
       }
       Spacer(Modifier.height(14.dp))
-      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){
-       Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate Report",fontWeight=FontWeight.Bold)
-      }
+      Button({generatedAt=SimpleDateFormat("hh:mm a",Locale.US).format(Date())},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(24.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.Assessment,null);Spacer(Modifier.width(6.dp));Text("Generate "+title,fontWeight=FontWeight.Bold)}
      }
     }
    }
    item{DailyChart(l,range.first,range.second)}
    item{
+    Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),color=C){
+     Column(Modifier.padding(16.dp)){
+      Text(when(tab){0->"Daily Performance";1->"Weekly Performance";2->"Monthly Performance";else->"Custom Range Performance"},color=N,fontSize=16.sp,fontWeight=FontWeight.Bold)
+      Text(formatRange(range.first,range.second),color=M,fontSize=10.sp);Spacer(Modifier.height(10.dp));PerformanceRows(l,range.first,range.second)
+     }
+    }
+   }
+   item{
     Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
-     Button({savePdf(range.first,range.second)},Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=P)){
-      Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save Report")
-     }
-     OutlinedButton({share(report(l,range.first,range.second))},Modifier.weight(1f)){
-      Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")
-     }
+     Button({savePdf(range.first,range.second)},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp),colors=ButtonDefaults.buttonColors(containerColor=P)){Icon(Icons.Default.PictureAsPdf,null);Spacer(Modifier.width(5.dp));Text("Save Report")}
+     OutlinedButton({share(report(l,range.first,range.second))},Modifier.weight(1f).height(50.dp),shape=RoundedCornerShape(25.dp)){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}
     }
    }
   }
@@ -410,6 +393,11 @@ fun Calendar(l:List<A>,date:String,back:()->Unit,choose:(String)->Unit){
   if(pickingEnd) NativeDatePicker(c,customEnd){customEnd=it;pickingEnd=false}
  }
 }
+@Composable fun PerformanceRows(l:List<A>,start:String,end:String){
+ val dates=rangeDates(start,end);val totalPossible=l.size*dates.size;val completed=dates.sumOf{d->l.count{done(it.id,d)}};val pending=totalPossible-completed;val pct=if(totalPossible==0)0 else completed*100/totalPossible
+ ReportMetricRow(Icons.Default.CheckCircle,"Completed",completed.toString(),G);ReportMetricRow(Icons.Default.Schedule,"Pending",pending.toString(),B);ReportMetricRow(Icons.Default.TrendingUp,"Completion Rate",pct.toString()+"%",P);ReportMetricRow(Icons.Default.CalendarMonth,"Days in Range",dates.size.toString(),O)
+}
+@Composable fun ReportMetricRow(icon:ImageVector,label:String,value:String,tint:Color){Row(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(36.dp).clip(CircleShape).background(tint.copy(alpha=.12f)),Alignment.Center){Icon(icon,null,tint=tint,modifier=Modifier.size(19.dp))};Spacer(Modifier.width(10.dp));Text(label,color=M,fontSize=10.sp,modifier=Modifier.weight(1f));Text(value,color=N,fontSize=14.sp,fontWeight=FontWeight.Bold)}}
 
 @Composable fun ReportSegmentedTabs(selected:Int,onSelected:(Int)->Unit){
  SegmentedTabs(listOf("Today","Weekly","Monthly","Custom"),selected,onSelected)
@@ -520,25 +508,23 @@ fun rangeStats(l:List<A>,start:String,end:String):Triple<Int,Int,Int>{
 fun backupData(c:Context,l:List<A>):String{val o=JSONObject();val a=JSONArray();l.forEach{val x=JSONObject();x.put("id",it.id);x.put("name",it.name);x.put("category",it.cat);x.put("target",it.target);x.put("frequency",it.freq);a.put(x)};o.put("activities",a);o.put("done",JSONArray(Done.set.toList()));return o.toString(2)}
 fun restoreData(c:Context,text:String){runCatching{val o=JSONObject(text);val a=o.optJSONArray("activities")?:JSONArray();c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putString("items",a.toString()).apply();val d=o.optJSONArray("done");val set=mutableSetOf<String>();if(d!=null)for(i in 0 until d.length())set.add(d.getString(i));Done.set.clear();Done.set.addAll(set);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putStringSet("done",set).apply()}}
 fun buildPdf(l:List<A>,start:String=today(),end:String=today()):ByteArray{
- val doc=PdfDocument();val pageW=595;val pageH=842;var pageNo=1;var page=doc.startPage(PdfDocument.PageInfo.Builder(pageW,pageH,pageNo).create());val canvas=page.canvas
- val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);p.color=android.graphics.Color.rgb(100,58,242);p.textSize=26f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD
- canvas.drawRect(0f,0f,pageW.toFloat(),92f,p);p.color=android.graphics.Color.WHITE;canvas.drawText("Activity",42f,42f,p);p.textSize=13f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Plan • Track • Achieve",42f,66f,p)
- p.color=android.graphics.Color.rgb(18,22,58);p.textSize=20f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Activity Performance Report",42f,132f,p)
- p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Range: "+formatRange(start,end),42f,153f,p)
- val rangeDatesForPdf=rangeDates(start,end);val completed=rangeDatesForPdf.sumOf{d->l.count{done(it.id,d)}};val possible=l.size*rangeDatesForPdf.size;val pct=if(possible==0)0 else completed*100/possible
- p.textSize=12f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Overall Performance",42f,198f,p);p.textSize=30f;canvas.drawText(pct.toString()+"%",42f,232f,p);p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText(completed.toString()+" completed  •  "+(possible-completed)+" pending  •  "+streak()+" day streak",42f,253f,p)
- p.color=android.graphics.Color.rgb(230,228,245);canvas.drawRoundRect(42f,270f,553f,278f,4f,4f,p);p.color=android.graphics.Color.rgb(100,58,242);canvas.drawRoundRect(42f,270f,42f+511f*(pct/100f),278f,4f,4f,p)
- p.color=android.graphics.Color.rgb(18,22,58);p.textSize=16f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText("Activities",42f,320f,p);p.textSize=10f;p.typeface=android.graphics.Typeface.DEFAULT
- var y=350f
- l.forEachIndexed{i,x->
-  if(y>790f){doc.finishPage(page);pageNo++;page=doc.startPage(PdfDocument.PageInfo.Builder(pageW,pageH,pageNo).create());y=55f}
-  p.color=android.graphics.Color.rgb(245,244,250);canvas.drawRoundRect(42f,y-20f,553f,y+22f,10f,10f,p)
-  p.color=android.graphics.Color.rgb(18,22,58);p.textSize=11f;p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText((i+1).toString()+". "+x.name,56f,y,p)
-  p.textSize=9f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText(x.cat+"  •  "+x.target+"  •  "+x.freq,56f,y+15f,p)
-  p.color=if(done(x.id,today())) android.graphics.Color.rgb(25,184,117) else android.graphics.Color.rgb(21,154,242);p.typeface=android.graphics.Typeface.DEFAULT_BOLD;canvas.drawText(if(done(x.id,today()))"COMPLETED" else "PENDING",460f,y,p);y+=55f
- }
- p.color=android.graphics.Color.rgb(100,58,242);p.textSize=9f;p.typeface=android.graphics.Typeface.DEFAULT;canvas.drawText("Activity • Plan • Track • Achieve",42f,820f,p)
- doc.finishPage(page);val out=ByteArrayOutputStream();doc.writeTo(out);doc.close();return out.toByteArray()
+ val doc=PdfDocument();val pageW=595;val pageH=842;var pageNo=1
+ var page=doc.startPage(PdfDocument.PageInfo.Builder(pageW,pageH,pageNo).create());var canvas=page.canvas
+ val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+ fun text(v:String,x:Float,y:Float,size:Float,bold:Boolean=false,color:Int=android.graphics.Color.rgb(18,22,58)){p.color=color;p.textSize=size;p.typeface=if(bold)android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT;canvas.drawText(v,x,y,p)}
+ fun header(){p.color=android.graphics.Color.rgb(100,58,242);canvas.drawRect(0f,0f,pageW.toFloat(),96f,p);text("Activity",42f,42f,27f,true,android.graphics.Color.WHITE);text("Plan • Track • Achieve",42f,68f,12f,false,android.graphics.Color.rgb(235,232,255))}
+ fun newPage(){doc.finishPage(page);pageNo++;page=doc.startPage(PdfDocument.PageInfo.Builder(pageW,pageH,pageNo).create());canvas=page.canvas}
+ header();text("Performance Report",42f,140f,23f,true);text(formatRange(start,end),42f,162f,11f,false,android.graphics.Color.rgb(104,112,142))
+ val dates=rangeDates(start,end);val completed=dates.sumOf{d->l.count{done(it.id,d)}};val possible=l.size*dates.size;val pending=possible-completed;val pct=if(possible==0)0 else completed*100/possible
+ p.color=android.graphics.Color.rgb(247,246,252);canvas.drawRoundRect(42f,190f,553f,315f,18f,18f,p)
+ text("OVERALL PERFORMANCE",60f,218f,10f,true,android.graphics.Color.rgb(104,112,142));text(pct.toString()+"%",60f,258f,34f,true)
+ text(completed.toString()+" completed",60f,285f,10f,false,android.graphics.Color.rgb(25,184,117));text(pending.toString()+" pending",180f,285f,10f,false,android.graphics.Color.rgb(21,154,242));text(dates.size.toString()+" day range",290f,285f,10f,false,android.graphics.Color.rgb(240,139,55))
+ p.color=android.graphics.Color.rgb(230,228,245);canvas.drawRoundRect(60f,298f,535f,306f,4f,4f,p);p.color=android.graphics.Color.rgb(100,58,242);canvas.drawRoundRect(60f,298f,60f+475f*(pct/100f),306f,4f,4f,p)
+ text("Performance Breakdown",42f,355f,17f,true);var y=385f
+ listOf("Completed" to completed.toString(),"Pending" to pending.toString(),"Completion Rate" to pct.toString()+"%","Current Streak" to streak().toString()+" days").forEach{(label,value)->p.color=android.graphics.Color.rgb(247,246,252);canvas.drawRoundRect(42f,y-18f,553f,y+18f,9f,9f,p);text(label,58f,y+4f,10f,false,android.graphics.Color.rgb(104,112,142));text(value,450f,y+4f,11f,true);y+=46f}
+ y+=8f;text("Activity Details",42f,y,17f,true);y+=28f
+ l.forEachIndexed{i,x->if(y>790f){newPage();header();y=125f};val doneDays=dates.count{d->done(x.id,d)};val status=if(doneDays>0)"COMPLETED" else "PENDING";val statusColor=if(doneDays>0)android.graphics.Color.rgb(25,184,117) else android.graphics.Color.rgb(21,154,242);p.color=android.graphics.Color.rgb(247,246,252);canvas.drawRoundRect(42f,y-19f,553f,y+23f,10f,10f,p);text((i+1).toString()+". "+x.name,57f,y,11f,true);text(x.cat+"  •  "+x.target+"  •  "+x.freq,57f,y+15f,8.5f,false,android.graphics.Color.rgb(104,112,142));text(status,456f,y,8.5f,true,statusColor);if(doneDays>0)text(doneDays.toString()+" day(s)",456f,y+14f,7.5f,false,statusColor);y+=52f}
+ text("Activity • Plan • Track • Achieve",42f,820f,9f,false,android.graphics.Color.rgb(100,58,242));doc.finishPage(page);val out=ByteArrayOutputStream();doc.writeTo(out);doc.close();return out.toByteArray()
 }
 fun done(id:Long,d:String)=Done.set.contains(id.toString()+"|"+d)
 fun toggle(c:Context,id:Long,d:String){val k=id.toString()+"|"+d;if(!Done.set.add(k))Done.set.remove(k);c.getSharedPreferences("activity",Context.MODE_PRIVATE).edit().putStringSet("done",Done.set).apply()}
