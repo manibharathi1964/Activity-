@@ -199,7 +199,7 @@ class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.on
  }
 }
 @Composable fun BM(v:String,l:String,c:Color){
- Surface(Modifier.weight(1f),shape=RoundedCornerShape(17.dp),color=C){
+ Surface(Modifier.width(75.dp),shape=RoundedCornerShape(17.dp),color=C){
   Column(Modifier.padding(vertical=11.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(v,color=c,fontWeight=FontWeight.Bold,fontSize=18.sp);Text(l,color=M,fontSize=9.sp)}
  }
 }
